@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+pydantic
+sqlalchemy
+databases
+alembic
+python-multipart
+pytest
+httpx
+python-dotenv
+loguru
+bcrypt
+PyJWT
+sqlite3
