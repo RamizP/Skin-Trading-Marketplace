@@ -43,7 +43,7 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
-@app.post("/entities", dependencies=[Depends(is_admin)])
+@app.post("/entities", user=Depends(get_current_user))
 def create_entity(entity: EntityCreate, db: Session = Depends(get_db)):
     existing_entity = db.query(Entity).filter(Entity.name == entity.name).first()
     if existing_entity:
@@ -52,8 +52,3 @@ def create_entity(entity: EntityCreate, db: Session = Depends(get_db)):
     entity = EntityRepository.create_entity(entity, db)
     response = JSONResponse(content="true")
     return response
-
-@app.get("/entities", response_model=List[EntityResponse])
-def list_entities(db: Session = Depends(get_db)):
-    return EntityRepository.get_all_entities(db)
-
