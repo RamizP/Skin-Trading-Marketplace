@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, conint
 from datetime import datetime
 
 
@@ -11,6 +11,7 @@ class UserResponse(BaseModel):
     image_url: str | None = None
     bio: str | None = None
     location: str | None = None
+    balance: int | None = 0
     created_at: datetime
 
     class Config:
@@ -29,6 +30,10 @@ class UserCreate(BaseModel):
 class UserLogin(BaseModel):
     username: str
     password: str
+
+
+class BalanceCharge(BaseModel):
+    amount: conint(gt=0)
 
 
 class JwtData(BaseModel):

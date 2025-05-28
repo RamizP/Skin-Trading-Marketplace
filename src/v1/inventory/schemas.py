@@ -2,7 +2,7 @@ from pydantic import BaseModel, conint
 from datetime import datetime
 from decimal import Decimal
 
-class BalanceResponse(BaseModel):
+class InventoryResponse(BaseModel):
     user_id: int
     entity_id: int
     amount: int
@@ -11,7 +11,7 @@ class BalanceResponse(BaseModel):
         orm_mode = True
         from_attributes=True
 
-class BalanceCharge(BaseModel):
+class InventoryCharge(BaseModel):
     entity_id: int
     amount: conint(gt=0)
 

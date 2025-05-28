@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from auth.models import Base, User
 from auth.repository import AuthRepository
 from auth.services import AuthService
-from auth.schemas import UserResponse, UserCreate, UserLogin
+from auth.schemas import UserResponse, UserCreate, UserLogin, BalanceCharge
 from auth.utils import AuthUtils
 
 from database import SessionLocal, engine, get_db
@@ -40,48 +40,34 @@ app.add_middleware(
 
 @app.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
-    existing_user = db.query(User).filter(User.username == user.username).first()
-    if existing_user:
-        raise HTTPException(status_code=400, detail="Username already exists")
+    return AuthService().register(user, db)
 
-    created_user = AuthRepository().create_user(user, db)
-    token = AuthService().create_token(created_user.id)
-    content = {"token": token}
-    response = JSONResponse(content=content)
-    response.set_cookie(
-        key="Authentication",
-        value=token,
-        httponly=True,
-        samesite="lax",
-        secure=True,
-    )
-
-    return response
 
 @app.post("/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
-    existing_user = db.query(User).filter(User.username == user.username).first()
-    if existing_user is None:
-        raise Exceptions.FALSE_CREDENTIALS()
-
-    AuthUtils.password_check(user.password, existing_user.password_hashed)
-
-    token = AuthService().create_token(existing_user.id)
-    content = {"token": token}
-    response = JSONResponse(content=content)
-    response.set_cookie(
-        key="Authentication", value=token, httponly=True, samesite="lax", secure=True
-    )
-    return response
+    return AuthService().login(user, db)
 
 
-@app.post("/logout/")
+@app.post("/logout")
 def logout():
     response = JSONResponse(content={"message": "Logged out"})
     response.delete_cookie("Authentication")
     return response
 
 
-@app.get("/me/", response_model=UserResponse)
+@app.post("/balance-charge")
+def balance_charge(balance_charge: BalanceCharge, db: Session = Depends(get_db), user = Depends(get_current_user)):
+    existing_user = db.query(User).filter(User.id == user.id).first()
+    if not existing_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    existing_user.balance += balance_charge.amount
+    user.balance += balance_charge.amount
+    db.commit()
+    db.refresh(existing_user)
+    return user
+
+
+@app.get("/me", response_model=UserResponse)
 def me(request: Request, db: Session = Depends(get_db), user = Depends(get_current_user)):
     return user
