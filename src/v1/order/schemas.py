@@ -15,7 +15,7 @@ class OrderCreate(BaseModel):
 
 class OrderResponse(BaseModel):
     id: int
-    orderer_id: int
+    user_id: int
     entity_id: int
     price: float
     amount: float | None = 1
@@ -24,3 +24,6 @@ class OrderResponse(BaseModel):
     class Config:
         orm_mode = True
         from_attributes=True
+
+class OrderBuy(BaseModel):
+    order_id: int
