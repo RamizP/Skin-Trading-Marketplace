@@ -50,15 +50,11 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db), user=Depends
 
 @app.post("/order-buy", response_model=List[OrderResponse])
 def order_buy(order_buy: OrderBuy, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    order = db.query(Order).filter(Order.id == order_buy.order_id).first()
-    return order
+    return OrderService.order_buy(order_buy, db, user)
 
 @app.get("/orders", response_model=List[OrderResponse])
-def get_my_orders(
-    db: Session = Depends(get_db),
-    user=Depends(get_current_user)
-):
-    order = db.query(Order).filter(Order.orderer_id == user.id).all()
+def get_my_orders(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    order = db.query(Order).filter(Order.user_id == user.id).all()
 
     if not order:
         raise HTTPException(status_code=404, detail="No orders found for this user.")
@@ -66,11 +62,7 @@ def get_my_orders(
     return order
 
 @app.get("/orders/{entity_id}", response_model=List[OrderResponse])
-def get_orders_by_entity(
-    entity_id: int,
-    db: Session = Depends(get_db),
-    user=Depends(get_current_user)
-):
+def get_orders_by_entity(entity_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
     orders = db.query(Order).filter(Order.entity_id == entity_id).order_by(Order.price.asc()).all()
 
     if not orders:

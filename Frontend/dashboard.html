@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>User Dashboard</h1>
+  <button onclick="logout()">Logout</button>
+
+  <section>
+    <h2>User Info</h2>
+    <button onclick="getMe()">Load Info</button>
+    <div id="user-info" class="card"></div>
+  </section>
+
+  <section>
+    <h2>Charge Balance</h2>
+    <input id="charge-amount" type="number" placeholder="Amount" />
+    <button onclick="chargeBalance()">Charge</button>
+  </section>
+
+  <nav>
+    <a href="inventory.html">Inventory</a> |
+    <a href="orders.html">Orders</a>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>

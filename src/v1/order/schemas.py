@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from datetime import datetime
 
 
@@ -7,7 +7,11 @@ from datetime import datetime
 class OrderCreate(BaseModel):
     entity_id: int
     price: float
-    amount: float | None = 1
+    amount: float = 1
+
+    @validator('amount', pre=True, always=True)
+    def force_amount_one(cls, v):
+        return 1
 
     class Config:
         orm_mode = True
@@ -18,7 +22,7 @@ class OrderResponse(BaseModel):
     user_id: int
     entity_id: int
     price: float
-    amount: float | None = 1
+    amount: float = 1
     created_at: datetime
 
     class Config:

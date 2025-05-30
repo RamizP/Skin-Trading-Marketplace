@@ -57,15 +57,7 @@ def logout():
 
 @app.post("/balance-charge")
 def balance_charge(balance_charge: BalanceCharge, db: Session = Depends(get_db), user = Depends(get_current_user)):
-    existing_user = db.query(User).filter(User.id == user.id).first()
-    if not existing_user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    existing_user.balance += balance_charge.amount
-    user.balance += balance_charge.amount
-    db.commit()
-    db.refresh(existing_user)
-    return user
+    return AuthService().user_balance_charge(balance_charge, db, user)
 
 
 @app.get("/me", response_model=UserResponse)

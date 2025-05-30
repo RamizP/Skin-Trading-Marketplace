@@ -53,6 +53,17 @@ class AuthService:
 
         return response
 
+    def user_balance_charge(self, balance_charge, db, user):
+        existing_user = db.query(User).filter(User.id == user.id).first()
+        if not existing_user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        existing_user.balance += balance_charge.amount
+        user.balance += balance_charge.amount
+        db.commit()
+        db.refresh(existing_user)
+        return user
+
     def create_token(self, user_id) -> str:
         expire = datetime.utcnow() + timedelta(minutes=60)
         payload = {"sub": str(user_id), "exp": expire}
