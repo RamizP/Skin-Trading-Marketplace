@@ -11,6 +11,7 @@ from auth.utils import AuthUtils
 from auth.repository import AuthRepository
 from sqlalchemy.orm import Session
 import Exceptions
+
 load_dotenv()
 
 
@@ -30,7 +31,11 @@ class AuthService:
         content = {"token": token}
         response = JSONResponse(content=content)
         response.set_cookie(
-            key="Authentication", value=token, httponly=True, samesite="lax", secure=True
+            key="Authentication",
+            value=token,
+            httponly=True,
+            samesite="lax",
+            secure=True,
         )
         return response
 

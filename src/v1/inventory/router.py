@@ -9,12 +9,7 @@ from Dependencies import is_admin, get_current_user
 from inventory.schemas import InventoryResponse, InventoryCharge
 from database import SessionLocal, engine, get_db
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import (
-    FastAPI,
-    Depends,
-    HTTPException,
-    Request
-)
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from typing import List
 
@@ -37,15 +32,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.post("/inventory-charge", response_model=InventoryResponse)
-def charge_my_inventory(charge_inventory: InventoryCharge, request: Request, db: Session = Depends(get_db), user = Depends(get_current_user)):
+def charge_my_inventory(
+    charge_inventory: InventoryCharge,
+    request: Request,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
 
     return InventoryService.charge(charge_inventory, user, db)
 
-@app.get("/myinventory", response_model=List[InventoryResponse])
-def get_my_inventory(request: Request, db: Session = Depends(get_db), user = Depends(get_current_user)):
 
-    inventory_entities = db.query(UserInventory).filter(UserInventory.user_id == user.id).all()
+@app.get("/myinventory", response_model=List[InventoryResponse])
+def get_my_inventory(
+    request: Request, db: Session = Depends(get_db), user=Depends(get_current_user)
+):
+
+    inventory_entities = (
+        db.query(UserInventory).filter(UserInventory.user_id == user.id).all()
+    )
     if inventory_entities is None:
         raise HTTPException(status_code=404, detail="Inventory not found for user")
 

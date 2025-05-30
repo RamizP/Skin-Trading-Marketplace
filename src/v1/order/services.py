@@ -1,6 +1,7 @@
 import os
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
+
 # from order.schemas import OrderResponse, OrderCreate
 from order.models import Base, Order
 from inventory.models import UserInventory
@@ -9,7 +10,14 @@ from auth.models import User
 
 class OrderService:
     def create_order(order, db, user):
-        inventory = db.query(UserInventory).filter(UserInventory.entity_id == order.entity_id, UserInventory.user_id == user.id).first()
+        inventory = (
+            db.query(UserInventory)
+            .filter(
+                UserInventory.entity_id == order.entity_id,
+                UserInventory.user_id == user.id,
+            )
+            .first()
+        )
 
         try:
             if not inventory or inventory.amount < order.amount or order.amount <= 0:
@@ -22,11 +30,11 @@ class OrderService:
                 db.delete(inventory)
 
             db_post = Order(
-                 user_id=user.id,
-                 entity_id=order.entity_id,
-                 price=order.price,
-                 amount=order.amount
-             )
+                user_id=user.id,
+                entity_id=order.entity_id,
+                price=order.price,
+                amount=order.amount,
+            )
 
             db.add(db_post)
             db.commit()
@@ -39,7 +47,12 @@ class OrderService:
 
     def order_buy(order_buy, db, user):
 
-        order_to_buy: Order = db.query(Order).filter(Order.id == order_buy.order_id, Order.user_id != user.id).order_by(Order.price.asc()).first()
+        order_to_buy: Order = (
+            db.query(Order)
+            .filter(Order.id == order_buy.order_id, Order.user_id != user.id)
+            .order_by(Order.price.asc())
+            .first()
+        )
         if not order_to_buy:
             raise HTTPException(status_code=404, detail="No orders found.")
 
@@ -47,19 +60,26 @@ class OrderService:
         if total_cost > user.balance:
             raise HTTPException(status_code=400, detail="Not enough balance.")
 
-        item_in_buyer_inventory = db.query(UserInventory).filter(UserInventory.entity_id == order_to_buy.entity_id, UserInventory.user_id == user.id).first()
+        item_in_buyer_inventory = (
+            db.query(UserInventory)
+            .filter(
+                UserInventory.entity_id == order_to_buy.entity_id,
+                UserInventory.user_id == user.id,
+            )
+            .first()
+        )
 
         try:
-            seller_user: User = db.query(User).filter(User.id == order_to_buy.user_id).first()
+            seller_user: User = (
+                db.query(User).filter(User.id == order_to_buy.user_id).first()
+            )
             buyer_user: User = db.query(User).filter(User.id == user.id).first()
 
             if not seller_user or not buyer_user:
                 raise HTTPException(status_code=404, detail="User not found.")
 
-
             seller_user.balance += total_cost
             buyer_user.balance -= total_cost
-
 
             if item_in_buyer_inventory:
                 item_in_buyer_inventory.amount += order_to_buy.amount
@@ -67,10 +87,9 @@ class OrderService:
                 db_post = UserInventory(
                     user_id=buyer_user.id,
                     entity_id=order_to_buy.entity_id,
-                    amount=order_to_buy.amount
+                    amount=order_to_buy.amount,
                 )
                 db.add(db_post)
-
 
             db.add(buyer_user)
             db.add(seller_user)

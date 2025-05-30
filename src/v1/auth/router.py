@@ -56,10 +56,14 @@ def logout():
 
 
 @app.post("/balance-charge")
-def balance_charge(balance_charge: BalanceCharge, db: Session = Depends(get_db), user = Depends(get_current_user)):
+def balance_charge(
+    balance_charge: BalanceCharge,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
     return AuthService().user_balance_charge(balance_charge, db, user)
 
 
 @app.get("/me", response_model=UserResponse)
-def me(request: Request, db: Session = Depends(get_db), user = Depends(get_current_user)):
+def me(request: Request, db: Session = Depends(get_db), user=Depends(get_current_user)):
     return user

@@ -1,4 +1,4 @@
 import Exceptions
 
-class EntityUtils:
-    ...
+
+class EntityUtils: ...

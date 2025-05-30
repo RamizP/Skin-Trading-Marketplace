@@ -3,6 +3,7 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from database import Base
 
+
 class Entity(Base):
     __tablename__ = "entity"
 

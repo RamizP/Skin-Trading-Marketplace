@@ -43,13 +43,16 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
+
 @app.post("/entities", dependencies=[Depends(is_admin)])
 def create_entity(entity: EntityCreate, db: Session = Depends(get_db)):
     return EntityService.create_entity(entity, db)
 
+
 @app.get("/entities", response_model=List[EntityResponse])
 def list_entities(db: Session = Depends(get_db)):
     return EntityRepository.get_all_entities(db)
+
 
 @app.get("/entities/{entity_id}", response_model=EntityResponse)
 def get_entity_by_id(entity_id: int, db: Session = Depends(get_db)):

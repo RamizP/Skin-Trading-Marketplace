@@ -3,6 +3,7 @@ from auth.schemas import UserResponse, UserCreate, UserLogin
 from database import SessionLocal, engine
 import bcrypt
 
+
 class AuthRepository:
 
     def create_user(self, user: UserCreate, db):
@@ -15,12 +16,12 @@ class AuthRepository:
             username=user.username,
             password_hashed=password_hashed.decode("utf-8"),
             email=user.email,
-            bio=user.bio, 
-            location=user.location
+            bio=user.bio,
+            location=user.location,
         )
 
         db.add(db_post)
         db.commit()
         db.refresh(db_post)
-        
+
         return db_post

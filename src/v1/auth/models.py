@@ -4,13 +4,16 @@ from sqlalchemy.orm import relationship
 from database import Base
 import enum
 
+
 class UserRole(str, enum.Enum):
     user = "user"
     admin = "admin"
 
+
 class UserStatus(str, enum.Enum):
     active = "active"
     blocked = "blocked"
+
 
 class User(Base):
     __tablename__ = "user"
