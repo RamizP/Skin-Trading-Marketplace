@@ -18,6 +18,7 @@ load_dotenv()
 class AuthService:
     def __init__(self):
         self._secret_key = os.getenv("SECRET_KEY")
+        self.token_live_time = os.getenv("TOKEN_LIVE_TIME")  # in minutes
         self._algorithm = "HS256"
 
     def login(self, user, db):
@@ -70,7 +71,7 @@ class AuthService:
         return user
 
     def create_token(self, user_id) -> str:
-        expire = datetime.utcnow() + timedelta(minutes=60)
+        expire = datetime.utcnow() + timedelta(minutes=self.token_live_time)
         payload = {"sub": str(user_id), "exp": expire}
         token = jwt.encode(payload, self._secret_key, algorithm=self._algorithm)
         return token

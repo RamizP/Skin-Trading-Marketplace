@@ -31,3 +31,7 @@ class OrderResponse(BaseModel):
 
 class OrderBuy(BaseModel):
     order_id: int
+
+
+class OrderDelete(BaseModel):
+    order_id: int

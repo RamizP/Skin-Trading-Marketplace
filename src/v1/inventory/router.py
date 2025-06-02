@@ -32,19 +32,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-@app.post("/inventory-charge", response_model=InventoryResponse)
-def charge_my_inventory(
-    charge_inventory: InventoryCharge,
-    request: Request,
-    db: Session = Depends(get_db),
-    user=Depends(get_current_user),
-):
-
-    return InventoryService.charge(charge_inventory, user, db)
-
-
-@app.get("/myinventory", response_model=List[InventoryResponse])
+@app.get("/inventory/me", response_model=List[InventoryResponse])
 def get_my_inventory(
     request: Request, db: Session = Depends(get_db), user=Depends(get_current_user)
 ):
@@ -56,3 +44,13 @@ def get_my_inventory(
         raise HTTPException(status_code=404, detail="Inventory not found for user")
 
     return inventory_entities
+
+@app.post("/inventory/me/charge", response_model=InventoryResponse)
+def charge_my_inventory(
+    charge_inventory: InventoryCharge,
+    request: Request,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+
+    return InventoryService.charge(charge_inventory, user, db)

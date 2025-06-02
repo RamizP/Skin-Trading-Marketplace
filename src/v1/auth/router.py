@@ -55,7 +55,7 @@ def logout():
     return response
 
 
-@app.post("/balance-charge")
+@app.post("/balance/me/charge")
 def balance_charge(
     balance_charge: BalanceCharge,
     db: Session = Depends(get_db),
