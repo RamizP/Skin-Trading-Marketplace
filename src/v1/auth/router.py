@@ -27,7 +27,7 @@ app = FastAPI(
     openapi_url="/custom_openapi.json",
 )
 
-origins = ["http://127.0.0.1:5500", "http://192.168.1.6:5500"]
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -55,7 +55,7 @@ def logout():
     return response
 
 
-@app.post("/balance/me/charge")
+@app.post("/me/balance/charge")
 def balance_charge(
     balance_charge: BalanceCharge,
     db: Session = Depends(get_db),

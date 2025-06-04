@@ -1,6 +1,8 @@
 from pydantic import BaseModel, validator
 from datetime import datetime
 
+from entity.schemas import EntityResponse
+
 
 class OrderCreate(BaseModel):
     entity_id: int
@@ -22,6 +24,7 @@ class OrderResponse(BaseModel):
     entity_id: int
     price: float
     amount: float = 1
+    entity: EntityResponse
     created_at: datetime
 
     class Config:

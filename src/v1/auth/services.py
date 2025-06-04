@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from fastapi import HTTPException, Request
+from fastapi import HTTPException, Header, Request
 from fastapi.responses import JSONResponse
 import jwt
 from jwt import ExpiredSignatureError, InvalidTokenError
@@ -18,7 +18,7 @@ load_dotenv()
 class AuthService:
     def __init__(self):
         self._secret_key = os.getenv("SECRET_KEY")
-        self.token_live_time = os.getenv("TOKEN_LIVE_TIME")  # in minutes
+        self.token_live_time = int(os.getenv("TOKEN_LIVE_TIME"))  # in minutes
         self._algorithm = "HS256"
 
     def login(self, user, db):
@@ -35,7 +35,7 @@ class AuthService:
             key="Authentication",
             value=token,
             httponly=True,
-            samesite="lax",
+            samesite="none",
             secure=True,
         )
         return response
@@ -53,7 +53,7 @@ class AuthService:
             key="Authentication",
             value=token,
             httponly=True,
-            samesite="lax",
+            samesite="none",
             secure=True,
         )
 
@@ -88,7 +88,9 @@ class AuthService:
         except jwt.PyJWTError:
             raise HTTPException(status_code=401, detail="Invalid token")
 
-    def current_user(self, token: str, db: Session) -> UserResponse:
+    def current_user(self, token: str, db: Session, req: Request) -> UserResponse:
+        print(f"Token: {req.headers["Authentication"]}")
+        token = req.headers["Authentication"]
         jwt_data = self.validate_jwt(token)
         try:
             user = db.query(User).filter(User.id == int(jwt_data.sub)).first()

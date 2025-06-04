@@ -1,12 +1,15 @@
+from sqlalchemy import Row, Tuple
 from sqlalchemy.orm import Session
 from inventory.models import Base, UserInventory
+from entity.models import Base, Entity
 from inventory.repository import InventoryRepository
 from inventory.services import InventoryService
 from inventory.utils import InventoryUtils
 from auth.services import AuthService
 import Exceptions
 from Dependencies import is_admin, get_current_user
-from inventory.schemas import InventoryResponse, InventoryCharge
+from inventory.schemas import EntityData, InventoryResponse, InventoryCharge
+from entity.schemas import EntityResponse
 from database import SessionLocal, engine, get_db
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends, HTTPException, Request
@@ -22,11 +25,11 @@ app = FastAPI(
     openapi_url="/custom_openapi.json",
 )
 
-origins = ["*"]
+origins = ["https://car3.rpashaiev.ddev.site"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://car3.rpashaiev.ddev.site"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,12 +41,12 @@ def get_my_inventory(
 ):
 
     inventory_entities = (
-        db.query(UserInventory).filter(UserInventory.user_id == user.id).all()
+        db.query(UserInventory, Entity).join(Entity, UserInventory.entity_id == Entity.id).filter(UserInventory.user_id == user.id).all()
     )
     if inventory_entities is None:
         raise HTTPException(status_code=404, detail="Inventory not found for user")
 
-    return inventory_entities
+    return inventory_with_entity(inventory_entities)
 
 @app.post("/inventory/me/charge", response_model=InventoryResponse)
 def charge_my_inventory(
@@ -54,3 +57,14 @@ def charge_my_inventory(
 ):
 
     return InventoryService.charge(charge_inventory, user, db)
+
+def inventory_with_entity(inventory) -> List[InventoryResponse]:
+    return [
+        InventoryResponse(
+            user_id=inv.user_id,
+            entity_id=inv.entity_id,
+            amount=inv.amount,
+            entity=EntityResponse.model_validate(ent)
+        )
+        for inv, ent in inventory
+    ]
