@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from fastapi import HTTPException, Request
+from fastapi import HTTPException, Header, Request
 from fastapi.responses import JSONResponse
 from pytest import Session
 from auth.models import User
@@ -16,6 +16,7 @@ load_dotenv()
 class AuthService:
     def __init__(self):
         self._secret_key = os.getenv("SECRET_KEY")
+        self.token_live_time = int(os.getenv("TOKEN_LIVE_TIME"))  # in minutes
         self._algorithm = "HS256"
 
     def login(self, user, db):
@@ -40,4 +41,3 @@ class AuthService:
         db.commit()
         db.refresh(existing_user)
         return user
-    

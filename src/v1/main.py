@@ -11,16 +11,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Trading Engine")
 origins = [
-    "*"
+    "https://car3.rpashaiev.ddev.site",
 ]
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # Specifies allowed origins
-    allow_credentials=True,  # Allow cookies to be sent
-    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, PUT, DELETE, etc.)
-    allow_headers=["*"],  # Allow all headers
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(auth_router.router, prefix="", tags=["Auth"])

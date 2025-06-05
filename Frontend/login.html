@@ -11,7 +11,7 @@
 </head>
 <body>
 <h1>Login</h1>
-<input id="email" type="email" placeholder="Email" required />
+<input id="username" type="username" placeholder="Username" required />
 <input id="password" type="password" placeholder="Password" required />
 <button id="loginBtn">Login</button>
 <div id="msg"></div>
@@ -20,11 +20,11 @@
   const API_BASE = 'http://127.0.0.1:8000';
 
   document.getElementById('loginBtn').onclick = async () => {
-    const email = document.getElementById('email').value.trim();
+    const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
 
-    if (!email || !password) {
-      return alert('Please enter email and password.');
+    if (!username || !password) {
+      return alert('Please enter username and password.');
     }
 
     try {
@@ -32,7 +32,7 @@
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         credentials: 'include',
-        body: JSON.stringify({email, password}),
+        body: JSON.stringify({username, password}),
       });
       if (!res.ok) {
         const err = await res.json();

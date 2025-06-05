@@ -118,7 +118,7 @@
 
     async function buyOrder(orderId) {
       try {
-        const res = await fetch(`${API_BASE}/order-buy`, {
+        const res = await fetch(`${API_BASE}/order/buy`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

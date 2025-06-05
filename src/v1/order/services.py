@@ -54,7 +54,7 @@ class OrderService:
             .first()
         )
         if not order_to_buy:
-            raise HTTPException(status_code=404, detail="No orders found.")
+            raise HTTPException(status_code=404, detail="No roots for this action.")
 
         total_cost = order_to_buy.price * order_to_buy.amount
         if total_cost > user.balance:
@@ -94,6 +94,47 @@ class OrderService:
             db.add(buyer_user)
             db.add(seller_user)
             db.delete(order_to_buy)
+
+            db.commit()
+        except:
+            db.rollback()
+            raise
+
+        response = JSONResponse(content="true")
+        return response
+
+    def order_delete(order_delete, db, user):
+        order_to_delete: Order = (
+            db.query(Order)
+            .filter(Order.id == order_delete.order_id, Order.user_id == user.id)
+            .first()
+        )
+
+
+        if not order_to_delete:
+            raise HTTPException(status_code=404, detail="No roots for this action.")
+
+        item_in_buyer_inventory = (
+            db.query(UserInventory)
+            .filter(
+                UserInventory.entity_id == order_to_delete.entity_id,
+                UserInventory.user_id == user.id,
+            )
+            .first()
+        )
+
+        try:
+            db.delete(order_to_delete)
+
+            if item_in_buyer_inventory:
+                item_in_buyer_inventory.amount += order_to_delete.amount
+            else:
+                db_post = UserInventory(
+                    user_id=user.id,
+                    entity_id=order_to_delete.entity_id,
+                    amount=order_to_delete.amount,
+                )
+                db.add(db_post)
 
             db.commit()
         except:
