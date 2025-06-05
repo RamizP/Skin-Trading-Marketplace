@@ -50,9 +50,12 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
 
 @app.post("/logout")
 def logout():
-    response = JSONResponse(content={"message": "Logged out"})
-    response.delete_cookie("Authentication")
-    return response
+    return AuthService().logout()
+
+
+@app.get("/me", response_model=UserResponse)
+def me(request: Request, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    return user
 
 
 @app.post("/balance-charge")
@@ -62,8 +65,3 @@ def balance_charge(
     user=Depends(get_current_user),
 ):
     return AuthService().user_balance_charge(balance_charge, db, user)
-
-
-@app.get("/me", response_model=UserResponse)
-def me(request: Request, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    return user
