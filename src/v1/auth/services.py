@@ -19,17 +19,17 @@ class AuthService:
         self._secret_key = os.getenv("SECRET_KEY")
         self.token_live_time = int(os.getenv("TOKEN_LIVE_TIME"))  # in minutes
         self._algorithm = "HS256"
-        self.auth_strategy: AuthStrategyInterface = auth_strategy or JWTAuthStrategy(self._secret_key, self._algorithm)
+        self.auth_strategy: JWTAuthStrategy = auth_strategy or JWTAuthStrategy(self._secret_key, self._algorithm)
 
     def login(self, user, db):
         return self.auth_strategy.login(user, db)
 
     def register(self, user, db):
         return self.auth_strategy.register(user, db)
-    
+
     def logout(self):
         return self.auth_strategy.logout()
-    
+
     def current_user(self, token: str, db: Session) -> UserResponse:
         return self.auth_strategy.current_user(token, db)
 
