@@ -1,6 +1,6 @@
 # main.py
 import uvicorn
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 
 from auth.router import app as auth_router
 from entity.router import app as entity_router
@@ -22,6 +22,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+api_router = APIRouter()
 
 app.include_router(auth_router.router, prefix="", tags=["Auth"])
 app.include_router(entity_router.router, prefix="", tags=["Entity"])

@@ -83,7 +83,7 @@ class JWTAuthStrategy(AuthStrategyInterface):
         )
 
         return response
-    
+
     def logout(self) -> JSONResponse:
         """
         Log out the user by clearing the authentication token.
@@ -180,3 +180,17 @@ class JWTAuthStrategy(AuthStrategyInterface):
 
 
 class OAuth2AuthStrategy: ...
+
+class TYPO3AuthStrategy(AuthStrategyInterface):
+
+    def login(self, typo3_token):
+        raise NotImplementedError("TYPO3 login is not implemented yet")
+
+    def register(self, typo3_token):
+        raise NotImplementedError("TYPO3 registration is not implemented yet")
+
+    def logout(self, typo3_token):
+        raise NotImplementedError("TYPO3 logout is not implemented yet")
+
+    def get_user(self, typo3_token):
+        raise NotImplementedError("TYPO3 get_user is not implemented yet")

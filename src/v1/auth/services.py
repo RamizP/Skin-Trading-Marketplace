@@ -26,10 +26,10 @@ class AuthService:
 
     def register(self, user, db):
         return self.auth_strategy.register(user, db)
-    
+
     def logout(self):
         return self.auth_strategy.logout()
-    
+
     def current_user(self, token: str, db: Session) -> UserResponse:
         return self.auth_strategy.current_user(token, db)
 

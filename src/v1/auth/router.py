@@ -39,12 +39,12 @@ app.add_middleware(
 
 
 @app.post("/register")
-def register(user: UserCreate, db: Session = Depends(get_db)):
+def register(user: UserCreate, request: Request, db: Session = Depends(get_db)):
     return AuthService().register(user, db)
 
 
 @app.post("/login")
-def login(user: UserLogin, db: Session = Depends(get_db)):
+def login(user: UserLogin, request: Request, db: Session = Depends(get_db)):
     return AuthService().login(user, db)
 
 
@@ -53,7 +53,7 @@ def logout():
     return AuthService().logout()
 
 
-@app.get("/me", response_model=UserResponse)
+@app.get("/user/me", response_model=UserResponse)
 def me(request: Request, db: Session = Depends(get_db), user=Depends(get_current_user)):
     return user
 

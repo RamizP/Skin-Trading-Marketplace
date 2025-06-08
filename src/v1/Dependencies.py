@@ -10,12 +10,12 @@ class Role(str, Enum):
     ADMIN = "admin"
     USER = "user"
 
-def get_current_user(request: Request, db: Session = Depends(get_db)) -> UserResponse:
-    token = request.cookies.get("Authentication")
+def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
+    token = request.headers.get('authentication') or request.cookies.get('Authentication')
     if not token:
         raise HTTPException(status_code=401, detail="Missing authentication token")
 
-    user: UserResponse = AuthService().current_user(token, db)
+    user = AuthService().current_user(token, db)
     if user is None:
         raise HTTPException(status_code=401, detail="Invalid token")
 
