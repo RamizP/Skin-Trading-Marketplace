@@ -24,6 +24,9 @@ from fastapi import (
 from fastapi.responses import JSONResponse
 from typing import List
 
+from auth.models import User
+from auth.schemas import UserResponse
+
 # Initialize database tables
 Base.metadata.create_all(bind=engine)
 
@@ -53,6 +56,7 @@ def get_my_orders(db: Session = Depends(get_db), user=Depends(get_current_user))
     orders = (
         db.query(Order, Entity)
         .join(Entity, Entity.id == Order.entity_id)
+        .join(User, User.id == Order.user_id)
         .filter(Order.user_id == user.id)
         .all()
     )
@@ -68,8 +72,9 @@ def get_orders_by_entity(
     entity_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)
 ):
     orders = (
-        db.query(Order, Entity)
+        db.query(Order, Entity, User)
         .join(Entity, Entity.id == Order.entity_id)
+        .join(User, User.id == Order.user_id)
         .filter(Order.entity_id == entity_id)
         .order_by(Order.price.asc())
         .all()
@@ -106,7 +111,8 @@ def orders_with_entity(orders) -> List[OrderResponse]:
     return [
         OrderResponse(
             **ord.__dict__,
+            user=UserResponse.model_validate(user),
             entity=EntityResponse.model_validate(ent)
         )
-        for ord, ent in orders
+        for ord, ent, user in orders
     ]
