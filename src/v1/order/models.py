@@ -9,7 +9,7 @@ class Order(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, nullable=False)
-    entity_id = Column(Integer, nullable=False)
+    entity_id = Column(Integer, nullable=True)
+    entity_in_inventory_id = Column(Integer, nullable=False)
     price = Column(Float, nullable=False)
-    amount = Column(Float, nullable=False, default=1)
     created_at = Column(DateTime, server_default=func.now())

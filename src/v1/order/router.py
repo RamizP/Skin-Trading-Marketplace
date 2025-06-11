@@ -26,6 +26,7 @@ from typing import List
 
 from auth.models import User
 from auth.schemas import UserResponse
+from inventory.schemas import InventoryResponse
 
 # Initialize database tables
 Base.metadata.create_all(bind=engine)
@@ -54,9 +55,8 @@ app.add_middleware(
 @app.get("/orders", response_model=List[OrderResponse])
 def get_my_orders(db: Session = Depends(get_db), user=Depends(get_current_user)):
     orders = (
-        db.query(Order, Entity)
-        .join(Entity, Entity.id == Order.entity_id)
-        .join(User, User.id == Order.user_id)
+        db.query(Order, UserInventory)
+        .join(UserInventory, UserInventory.id == Order.entity_in_inventory_id)
         .filter(Order.user_id == user.id)
         .all()
     )
@@ -64,7 +64,7 @@ def get_my_orders(db: Session = Depends(get_db), user=Depends(get_current_user))
     if not orders:
         raise HTTPException(status_code=404, detail="No orders found for this user.")
 
-    return orders_with_entity(orders)
+    return orders_with_entity(orders, db)
 
 
 @app.get("/orders/{entity_id}", response_model=List[OrderResponse])
@@ -72,9 +72,8 @@ def get_orders_by_entity(
     entity_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)
 ):
     orders = (
-        db.query(Order, Entity, User)
-        .join(Entity, Entity.id == Order.entity_id)
-        .join(User, User.id == Order.user_id)
+        db.query(Order, UserInventory)
+        .join(UserInventory, UserInventory.id == Order.entity_in_inventory_id)
         .filter(Order.entity_id == entity_id)
         .order_by(Order.price.asc())
         .all()
@@ -83,7 +82,7 @@ def get_orders_by_entity(
     if not orders:
         raise HTTPException(status_code=404, detail="No orders found for this entity.")
 
-    return orders_with_entity(orders)
+    return orders_with_entity(orders, db)
 
 
 @app.post("/orders")
@@ -102,17 +101,25 @@ def order_buy(
 
 @app.delete("/order", response_model=List[OrderResponse])
 def order_delete(
-    order_delete: OrderDelete, db: Session = Depends(get_db), user=Depends(get_current_user)
+    order_delete: OrderDelete,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
 ):
     return OrderService.order_delete(order_delete, db, user)
 
 
-def orders_with_entity(orders) -> List[OrderResponse]:
+def orders_with_entity(orders, db) -> List[OrderResponse]:
     return [
         OrderResponse(
             **ord.__dict__,
-            user=UserResponse.model_validate(user),
-            entity=EntityResponse.model_validate(ent)
+            inventory=InventoryResponse(
+                id=inv.id,
+                user_id=inv.user_id,
+                entity_id=inv.entity_id,
+                entity_wear=inv.entity_wear,
+                entity=EntityResponse.model_validate(db.query(Entity).filter(Entity.id == inv.entity_id).first()),
+                in_sale="false",
+            )
         )
-        for ord, ent, user in orders
+        for ord, inv in orders
     ]

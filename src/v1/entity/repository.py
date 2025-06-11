@@ -7,7 +7,10 @@ from sqlalchemy.orm import Session
 class EntityRepository:
     def create_entity(entity: EntityCreate, db: Session):
         db_post = Entity(
-            name=entity.name, symbol=entity.symbol, image_url=entity.image_url
+            name=entity.name,
+            symbol=entity.symbol,
+            image_url=entity.image_url,
+            entity_rarity=entity.entity_rarity
         )
 
         db.add(db_post)

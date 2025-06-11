@@ -1,11 +1,11 @@
 from sqlalchemy.orm import Session
-from entity.models import Base, Entity
+from entity.models import Base, Entity, Category, SubCategory
 from entity.repository import EntityRepository
 from entity.services import EntityService
 from entity.utils import EntityUtils
 import Exceptions
 from Dependencies import is_admin, get_current_user
-from entity.schemas import EntityResponse, EntityCreate
+from entity.schemas import CategoryCreate, EntityResponse, EntityCreate, SubCategoryCreate
 from database import SessionLocal, engine, get_db
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import (
@@ -60,3 +60,29 @@ def get_entity_by_id(entity_id: int, db: Session = Depends(get_db)):
     if not existing_entity:
         raise HTTPException(status_code=400, detail="Entity not exists")
     return existing_entity
+
+
+@app.post("/category", dependencies=[Depends(is_admin)])
+def create_category(category: CategoryCreate, db: Session = Depends(get_db)):
+        db_post = Category(
+            name=category.name
+        )
+
+        db.add(db_post)
+        db.commit()
+        db.refresh(db_post)
+
+        return db_post
+
+@app.post("/sub-category", dependencies=[Depends(is_admin)])
+def create_sub_category(sub_category: SubCategoryCreate, db: Session = Depends(get_db)):
+        db_post = SubCategory(
+            name=sub_category.name,
+            category_id=sub_category.category_id
+        )
+
+        db.add(db_post)
+        db.commit()
+        db.refresh(db_post)
+
+        return db_post

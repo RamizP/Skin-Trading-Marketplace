@@ -1,4 +1,3 @@
-import os
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
@@ -13,27 +12,24 @@ class OrderService:
         inventory = (
             db.query(UserInventory)
             .filter(
-                UserInventory.entity_id == order.entity_id,
+                UserInventory.id == order.entity_in_inventory_id,
                 UserInventory.user_id == user.id,
             )
             .first()
         )
 
         try:
-            if not inventory or inventory.amount < order.amount or order.amount <= 0:
+            if not inventory or inventory.in_sale != "False":
                 db.rollback()
-                raise HTTPException(status_code=400, detail="Not enough inventory")
+                raise HTTPException(status_code=400, detail="Not enough in inventory")
 
-            inventory.amount -= order.amount
-
-            if inventory.amount <= 0:
-                db.delete(inventory)
+            inventory.in_sale="True"
 
             db_post = Order(
                 user_id=user.id,
-                entity_id=order.entity_id,
-                price=order.price,
-                amount=order.amount,
+                entity_in_inventory_id=order.entity_in_inventory_id,
+                entity_id=inventory.entity_id,
+                price=order.price
             )
 
             db.add(db_post)
@@ -56,23 +52,20 @@ class OrderService:
         if not order_to_buy:
             raise HTTPException(status_code=404, detail="No roots for this action.")
 
-        total_cost = order_to_buy.price * order_to_buy.amount
+        total_cost = order_to_buy.price
         if total_cost > user.balance:
             raise HTTPException(status_code=400, detail="Not enough balance.")
 
-        item_in_buyer_inventory = (
+        item_in_inventory = (
             db.query(UserInventory)
             .filter(
-                UserInventory.entity_id == order_to_buy.entity_id,
-                UserInventory.user_id == user.id,
+                UserInventory.id == order_to_buy.entity_in_inventory_id,
             )
             .first()
         )
 
         try:
-            seller_user: User = (
-                db.query(User).filter(User.id == order_to_buy.user_id).first()
-            )
+            seller_user: User = db.query(User).filter(User.id == order_to_buy.user_id).first()
             buyer_user: User = db.query(User).filter(User.id == user.id).first()
 
             if not seller_user or not buyer_user:
@@ -81,19 +74,18 @@ class OrderService:
             seller_user.balance += total_cost
             buyer_user.balance -= total_cost
 
-            if item_in_buyer_inventory:
-                item_in_buyer_inventory.amount += order_to_buy.amount
-            else:
-                db_post = UserInventory(
-                    user_id=buyer_user.id,
-                    entity_id=order_to_buy.entity_id,
-                    amount=order_to_buy.amount,
-                )
-                db.add(db_post)
+
+            db_post = UserInventory(
+                user_id=buyer_user.id,
+                entity_id=item_in_inventory.entity_id,
+                entity_wear=item_in_inventory.entity_wear
+            )
+            db.add(db_post)
 
             db.add(buyer_user)
             db.add(seller_user)
             db.delete(order_to_buy)
+            db.delete(item_in_inventory)
 
             db.commit()
         except:
@@ -126,15 +118,12 @@ class OrderService:
         try:
             db.delete(order_to_delete)
 
-            if item_in_buyer_inventory:
-                item_in_buyer_inventory.amount += order_to_delete.amount
-            else:
-                db_post = UserInventory(
-                    user_id=user.id,
-                    entity_id=order_to_delete.entity_id,
-                    amount=order_to_delete.amount,
-                )
-                db.add(db_post)
+
+            db_post = UserInventory(
+                user_id=user.id,
+                entity_id=order_to_delete.entity_id
+            )
+            db.add(db_post)
 
             db.commit()
         except:

@@ -23,3 +23,18 @@ class EntityCreate(BaseModel):
     class Config:
         orm_mode = True
         from_attributes = True
+
+class CategoryCreate(BaseModel):
+    name: str
+
+    class Config:
+        orm_mode = True
+        from_attributes = True
+
+class SubCategoryCreate(BaseModel):
+    name: str
+    category_id: int
+
+    class Config:
+        orm_mode = True
+        from_attributes = True

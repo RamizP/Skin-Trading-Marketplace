@@ -35,36 +35,52 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/inventory/me", response_model=List[InventoryResponse])
 def get_my_inventory(
     request: Request, db: Session = Depends(get_db), user=Depends(get_current_user)
 ):
 
     inventory_entities = (
-        db.query(UserInventory, Entity).join(Entity, UserInventory.entity_id == Entity.id).filter(UserInventory.user_id == user.id).all()
+        db.query(UserInventory, Entity)
+        .join(Entity, UserInventory.entity_id == Entity.id)
+        .filter(UserInventory.user_id == user.id)
+        .all()
     )
     if inventory_entities is None:
         raise HTTPException(status_code=404, detail="Inventory not found for user")
 
     return inventory_with_entity(inventory_entities)
 
-@app.post("/inventory/me/charge", response_model=InventoryResponse)
+
+@app.post("/inventory/me/charge", response_model=List[InventoryResponse])
 def charge_my_inventory(
     charge_inventory: InventoryCharge,
     request: Request,
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
 ):
+    inventory = InventoryService.charge(charge_inventory, user, db)
 
-    return InventoryService.charge(charge_inventory, user, db)
+    inventory_entities = (
+        db.query(UserInventory, Entity)
+        .join(Entity, UserInventory.entity_id == Entity.id)
+        .filter(UserInventory.user_id == user.id)
+        .filter(UserInventory.id == inventory.id)
+        .all()
+    )
+    return inventory_with_entity(inventory_entities)
+
 
 def inventory_with_entity(inventory) -> List[InventoryResponse]:
     return [
         InventoryResponse(
+            id=inv.id,
             user_id=inv.user_id,
             entity_id=inv.entity_id,
-            amount=inv.amount,
-            entity=EntityResponse.model_validate(ent)
+            entity_wear=inv.entity_wear,
+            in_sale=inv.in_sale,
+            entity=EntityResponse.model_validate(ent),
         )
         for inv, ent in inventory
     ]

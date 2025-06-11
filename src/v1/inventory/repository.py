@@ -15,27 +15,13 @@ class InventoryRepository:
     def charge_my_inventory(
         self, charge_inventory: InventoryCharge, user: UserResponse, db
     ):
-        inventory = (
-            db.query(UserInventory)
-            .filter(
-                UserInventory.user_id == user.id,
-                UserInventory.entity_id == charge_inventory.entity_id,
-            )
-            .first()
-        )
         entity = (
             db.query(Entity).filter(Entity.id == charge_inventory.entity_id).first()
         )
         if not entity:
             raise HTTPException(status_code=400, detail="Not existing entity")
 
-        if not inventory:
-            inventory = self.create_inventory(charge_inventory, user, db)
-        else:
-            inventory.amount += charge_inventory.amount
-            db.commit()
-            db.refresh(inventory)
-            return inventory
+        inventory = self.create_inventory(charge_inventory, user, db)
         return inventory
 
     def create_inventory(
@@ -44,7 +30,7 @@ class InventoryRepository:
         db_post = UserInventory(
             user_id=user.id,
             entity_id=charge_inventory.entity_id,
-            amount=charge_inventory.amount,
+            entity_wear=charge_inventory.entity_wear
         )
 
         db.add(db_post)
