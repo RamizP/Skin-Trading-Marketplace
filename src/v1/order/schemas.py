@@ -1,8 +1,6 @@
 from pydantic import BaseModel, validator
 from datetime import datetime
 
-from entity.schemas import EntityResponse
-from auth.schemas import UserResponse
 from inventory.schemas import InventoryResponse
 
 

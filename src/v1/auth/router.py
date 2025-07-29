@@ -1,6 +1,7 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Response, Request, Cookie
+from fastapi import FastAPI, Depends, HTTPException, status, Response, Request, Cookie, Security
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import APIKeyHeader, HTTPBearer, HTTPAuthorizationCredentials
 
 from auth.models import Base, User
 from auth.repository import AuthRepository
@@ -16,7 +17,6 @@ from Dependencies import is_admin, get_current_user
 import Exceptions
 import bcrypt
 
-
 # Initialize database tables
 Base.metadata.create_all(bind=engine)
 
@@ -26,6 +26,8 @@ app = FastAPI(
     version="1.0.0",
     openapi_url="/custom_openapi.json",
 )
+
+# api_key_header = APIKeyHeader(name="Authentication")
 
 origins = ["*"]
 
@@ -51,7 +53,6 @@ def login(user: UserLogin, request: Request, db: Session = Depends(get_db)):
 @app.post("/logout")
 def logout():
     return AuthService().logout()
-
 
 @app.get("/user/me", response_model=UserResponse)
 def me(request: Request, db: Session = Depends(get_db), user=Depends(get_current_user)):

@@ -22,7 +22,7 @@ import Exceptions
 class JWTAuthStrategy(AuthStrategyInterface):
     """Strategy for JWT-based authentication."""
 
-    def __init__(self, secret_key: str, algorithm: str = "HS256"):
+    def __init__(self, secret_key: str, algorithm: str = "HS256", token_duration: int = 600):
         """
         Initialize the JWT authentication strategy with a secret key and algorithm.
 
@@ -31,6 +31,7 @@ class JWTAuthStrategy(AuthStrategyInterface):
         """
         self._secret_key = secret_key
         self._algorithm = algorithm
+        self.token_duration = token_duration
 
     def login(self, user_data, db):
         """
@@ -55,7 +56,7 @@ class JWTAuthStrategy(AuthStrategyInterface):
             value=token,
             httponly=True,
             samesite="lax",
-            secure=True,
+            secure=False,
         )
         return response
 
@@ -114,7 +115,7 @@ class JWTAuthStrategy(AuthStrategyInterface):
         if not user_id:
             raise HTTPException(status_code=400, detail="User ID is required")
 
-        expire = datetime.utcnow() + timedelta(minutes=60)
+        expire = datetime.utcnow() + timedelta(minutes=self.token_duration)
         payload = {"sub": str(user_id), "exp": expire}
         token = jwt.encode(payload, self._secret_key, algorithm=self._algorithm)
         return token

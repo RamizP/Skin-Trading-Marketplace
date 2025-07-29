@@ -8,6 +8,8 @@ class EntityResponse(BaseModel):
     symbol: str
     image_url: str | None = None
     entity_rarity: EntityRarity
+    category_id: int | None = None
+    sub_category_id: int | None = None
 
     class Config:
         orm_mode = True
@@ -19,6 +21,25 @@ class EntityCreate(BaseModel):
     symbol: str
     image_url: str | None = None
     entity_rarity: EntityRarity
+    category_id: int | None = None
+    sub_category_id: int | None = None
+
+    class Config:
+        orm_mode = True
+        from_attributes = True
+
+class CategoryResponce(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        orm_mode = True
+        from_attributes = True
+
+class SubCategoryResponce(BaseModel):
+    id: int
+    name: str
+    category_id: int
 
     class Config:
         orm_mode = True

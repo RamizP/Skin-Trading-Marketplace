@@ -5,7 +5,7 @@ from entity.services import EntityService
 from entity.utils import EntityUtils
 import Exceptions
 from Dependencies import is_admin, get_current_user
-from entity.schemas import CategoryCreate, EntityResponse, EntityCreate, SubCategoryCreate
+from entity.schemas import CategoryCreate, CategoryResponce, EntityResponse, EntityCreate, SubCategoryCreate, SubCategoryResponce
 from database import SessionLocal, engine, get_db
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import (
@@ -86,3 +86,11 @@ def create_sub_category(sub_category: SubCategoryCreate, db: Session = Depends(g
         db.refresh(db_post)
 
         return db_post
+
+@app.get("/category", response_model=List[CategoryResponce])
+def get_category(db: Session = Depends(get_db)):
+        return db.query(Category).all()
+
+@app.get("/sub-category", response_model=List[SubCategoryResponce])
+def get_sub_category(db: Session = Depends(get_db)):
+        return db.query(SubCategory).all()

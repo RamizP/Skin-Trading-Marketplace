@@ -108,7 +108,7 @@ def order_delete(
     return OrderService.order_delete(order_delete, db, user)
 
 
-def orders_with_entity(orders, db) -> List[OrderResponse]:
+def orders_with_entity(orders: Order, db: Session) -> List[OrderResponse]:
     return [
         OrderResponse(
             **ord.__dict__,
@@ -118,7 +118,7 @@ def orders_with_entity(orders, db) -> List[OrderResponse]:
                 entity_id=inv.entity_id,
                 entity_wear=inv.entity_wear,
                 entity=EntityResponse.model_validate(db.query(Entity).filter(Entity.id == inv.entity_id).first()),
-                in_sale="false",
+                in_sale=inv.in_sale,
             )
         )
         for ord, inv in orders
