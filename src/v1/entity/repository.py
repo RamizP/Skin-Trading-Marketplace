@@ -25,8 +25,8 @@ class EntityRepository:
 
         return db_post
 
-    def get_all_entities(db: Session):
-        return db.query(Entity).all()
+    def get_all_entities(db: Session, skip, limit):
+        return db.query(Entity).offset(skip).limit(limit)
 
     def category_validate(category_id: int, sub_category_id: int, db):
         if (category_id != None and not db.query(Category).filter(Category.id == category_id).first()):

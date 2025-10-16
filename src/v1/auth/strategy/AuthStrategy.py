@@ -182,16 +182,33 @@ class JWTAuthStrategy(AuthStrategyInterface):
 
 class OAuth2AuthStrategy: ...
 
+
+import requests
+import json
+
 class TYPO3AuthStrategy(AuthStrategyInterface):
 
     def login(self, typo3_token):
         raise NotImplementedError("TYPO3 login is not implemented yet")
 
-    def register(self, typo3_token):
+    def register(self, typo3_token, db):
+        cookies = {
+            'fe_typo_user': typo3_token,
+        }
+        user = requests.get('https://c-marketing.rpashaiev.ddev.site/api?type=788787878', cookies=cookies, verify=False).json()
+        user_exists = db.query(User).filter(User.email == user.get("email")).first()
+
+        if user_exists:
+            raise NotImplementedError("TYPO3 registration unsuccessfull")
+
+
         raise NotImplementedError("TYPO3 registration is not implemented yet")
 
     def logout(self, typo3_token):
         raise NotImplementedError("TYPO3 logout is not implemented yet")
 
-    def get_user(self, typo3_token):
-        raise NotImplementedError("TYPO3 get_user is not implemented yet")
+    def current_user(self, typo3_token, db):
+        cookies = {
+            'fe_typo_user': typo3_token,
+        }
+        return requests.get('https://c-marketing.rpashaiev.ddev.site/api?type=788787878', cookies=cookies, verify=False).json()

@@ -8,7 +8,7 @@ from auth.utils import AuthUtils
 from auth.repository import AuthRepository
 import Exceptions
 from auth.schemas import UserResponse
-from auth.strategy.AuthStrategy import JWTAuthStrategy
+from auth.strategy.AuthStrategy import JWTAuthStrategy, TYPO3AuthStrategy
 from auth.strategy import AuthStrategyInterface
 
 load_dotenv()
@@ -19,7 +19,7 @@ class AuthService:
         self._secret_key = os.getenv("SECRET_KEY")
         self.token_live_time = int(os.getenv("TOKEN_LIVE_TIME"))  # in minutes
         self._algorithm = "HS256"
-        self.auth_strategy: JWTAuthStrategy = auth_strategy or JWTAuthStrategy(self._secret_key, self._algorithm)
+        self.auth_strategy: AuthStrategyInterface = auth_strategy or JWTAuthStrategy(self._secret_key, self._algorithm)
 
     def login(self, user, db):
         return self.auth_strategy.login(user, db)
@@ -30,7 +30,7 @@ class AuthService:
     def logout(self):
         return self.auth_strategy.logout()
 
-    def current_user(self, token: str, db: Session) -> UserResponse:
+    def current_user(self, token: str, db: Session = None) -> UserResponse:
         return self.auth_strategy.current_user(token, db)
 
     def user_balance_charge(self, balance_charge, db, user):

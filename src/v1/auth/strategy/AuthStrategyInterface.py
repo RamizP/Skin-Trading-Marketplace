@@ -23,7 +23,7 @@ class AuthStrategyInterface(ABC):
         :return: User object if registration is successful, otherwise raises an exception.
         """
         raise NotImplementedError("Subclasses must implement this method.")
-    
+
     @abstractmethod
     def logout(self):
         """
@@ -34,12 +34,11 @@ class AuthStrategyInterface(ABC):
         raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
-    def current_user(self):
+    def current_user(self, token: str, db = None):
         """
         Retrieve the current user based on the authentication token.
 
         :param token: The authentication token.
-        :param db: Database session.
         :return: User object if the token is valid, otherwise raises an exception.
         """
         raise NotImplementedError("Subclasses must implement this method.")

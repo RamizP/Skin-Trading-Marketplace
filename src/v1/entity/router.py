@@ -1,23 +1,23 @@
 from sqlalchemy.orm import Session
-from entity.models import Base, Entity, Category, SubCategory
+from entity.models import Entity, Category, SubCategory
 from entity.repository import EntityRepository
 from entity.services import EntityService
-from entity.utils import EntityUtils
-import Exceptions
-from Dependencies import is_admin, get_current_user
-from entity.schemas import CategoryCreate, CategoryResponce, EntityResponse, EntityCreate, SubCategoryCreate, SubCategoryResponce
-from database import SessionLocal, engine, get_db
+from Dependencies import is_admin
+from entity.schemas import (
+    CategoryCreate,
+    CategoryResponce,
+    EntityResponse,
+    EntityCreate,
+    SubCategoryCreate,
+    SubCategoryResponce,
+)
+from database import engine, get_db, Base
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import (
     FastAPI,
     Depends,
     HTTPException,
-    status,
-    Response,
-    Request,
-    APIRouter,
 )
-from fastapi.responses import JSONResponse
 from typing import List
 
 # Initialize database tables
@@ -30,17 +30,14 @@ app = FastAPI(
     openapi_url="/custom_openapi.json",
 )
 
+origins = ["https://c-marketing.ssen.ddev.site/"]
 
-# List of allowed origins
-origins = ["*"]
-
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Specifies allowed origins
-    allow_credentials=True,  # Allow cookies to be sent
-    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, PUT, DELETE, etc.)
-    allow_headers=["*"],  # Allow all headers
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["DELETE, POST, GET, OPTIONS"],  # or list your actual methods
+    allow_headers=["Content-Type, Authorization, X-Requested-With"],
 )
 
 
@@ -50,8 +47,8 @@ def create_entity(entity: EntityCreate, db: Session = Depends(get_db)):
 
 
 @app.get("/entities", response_model=List[EntityResponse])
-def list_entities(db: Session = Depends(get_db)):
-    return EntityRepository.get_all_entities(db)
+async def list_entities(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    return EntityRepository.get_all_entities(db, skip, limit)
 
 
 @app.get("/entities/{entity_id}", response_model=EntityResponse)
@@ -64,33 +61,31 @@ def get_entity_by_id(entity_id: int, db: Session = Depends(get_db)):
 
 @app.post("/category", dependencies=[Depends(is_admin)])
 def create_category(category: CategoryCreate, db: Session = Depends(get_db)):
-        db_post = Category(
-            name=category.name
-        )
+    db_post = Category(name=category.name)
 
-        db.add(db_post)
-        db.commit()
-        db.refresh(db_post)
+    db.add(db_post)
+    db.commit()
+    db.refresh(db_post)
 
-        return db_post
+    return db_post
+
 
 @app.post("/sub-category", dependencies=[Depends(is_admin)])
 def create_sub_category(sub_category: SubCategoryCreate, db: Session = Depends(get_db)):
-        db_post = SubCategory(
-            name=sub_category.name,
-            category_id=sub_category.category_id
-        )
+    db_post = SubCategory(name=sub_category.name, category_id=sub_category.category_id)
 
-        db.add(db_post)
-        db.commit()
-        db.refresh(db_post)
+    db.add(db_post)
+    db.commit()
+    db.refresh(db_post)
 
-        return db_post
+    return db_post
+
 
 @app.get("/category", response_model=List[CategoryResponce])
 def get_category(db: Session = Depends(get_db)):
-        return db.query(Category).all()
+    return db.query(Category).all()
+
 
 @app.get("/sub-category", response_model=List[SubCategoryResponce])
 def get_sub_category(db: Session = Depends(get_db)):
-        return db.query(SubCategory).all()
+    return db.query(SubCategory).all()

@@ -35,6 +35,9 @@ class UserLogin(BaseModel):
 class BalanceCharge(BaseModel):
     amount: conint(gt=0)
 
+class TYPO3Auth(BaseModel):
+    token: str
+
 
 class JwtData(BaseModel):
     sub: str

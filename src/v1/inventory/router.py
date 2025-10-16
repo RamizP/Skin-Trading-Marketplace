@@ -1,35 +1,31 @@
-from sqlalchemy import Row, Tuple
 from sqlalchemy.orm import Session
-from inventory.models import Base, UserInventory
-from entity.models import Base, Entity
-from inventory.repository import InventoryRepository
+from inventory.models import UserInventory
+from entity.models import Entity
 from inventory.services import InventoryService
-from inventory.utils import InventoryUtils
-from auth.services import AuthService
-import Exceptions
-from Dependencies import is_admin, get_current_user
-from inventory.schemas import EntityData, InventoryResponse, InventoryCharge
+from Dependencies import get_current_user
+from inventory.schemas import InventoryResponse, InventoryCharge
 from entity.schemas import EntityResponse
-from database import SessionLocal, engine, get_db
+from database import engine, get_db, Base
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends, HTTPException, Request
-from fastapi.responses import JSONResponse
 from typing import List
+
+from auth.schemas import UserResponse
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="My API",
     description="This is a custom API using OpenAPI with FastAPI",
-    version="1.0.0",
+    versmion="1.0.0",
     openapi_url="/custom_openapi.json",
 )
 
-origins = ["https://car3.rpashaiev.ddev.site"]
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://car3.rpashaiev.ddev.site"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,8 +34,18 @@ app.add_middleware(
 
 @app.get("/inventory/me", response_model=List[InventoryResponse])
 def get_my_inventory(
-    request: Request, db: Session = Depends(get_db), user=Depends(get_current_user)
+    db: Session = Depends(get_db), user: UserResponse = Depends(get_current_user)
 ):
+    """
+    Get current user inventory.
+
+    Args:
+        user (UserResponse): Current user.
+        db (Session): Database.
+
+    Returns:
+        List[InventoryResponse]: Users Inventory.
+    """
 
     inventory_entities = (
         db.query(UserInventory, Entity)
@@ -47,21 +53,30 @@ def get_my_inventory(
         .filter(UserInventory.user_id == user.id)
         .all()
     )
-    if inventory_entities is None:
+    if not inventory_entities:
         raise HTTPException(status_code=404, detail="Inventory not found for user")
 
     return inventory_with_entity(inventory_entities)
 
-
 @app.post("/inventory/me/charge", response_model=List[InventoryResponse])
 def charge_my_inventory(
     charge_inventory: InventoryCharge,
-    request: Request,
     db: Session = Depends(get_db),
-    user=Depends(get_current_user),
+    user: UserResponse = Depends(get_current_user),
 ):
-    inventory = InventoryService.charge(charge_inventory, user, db)
+    """
+    Add a skin to the current user inventory.
 
+    Args:
+        charge_inventory (InventoryCharge): Schema.
+        user (UserResponse): Current user.
+        db (Session): Database.
+
+    Returns:
+        List[InventoryResponse]: Users Inventory.
+    """
+
+    inventory = InventoryService.charge(charge_inventory, user, db)
     inventory_entities = (
         db.query(UserInventory, Entity)
         .join(Entity, UserInventory.entity_id == Entity.id)
@@ -73,6 +88,7 @@ def charge_my_inventory(
 
 
 def inventory_with_entity(inventory) -> List[InventoryResponse]:
+
     return [
         InventoryResponse(
             id=inv.id,
