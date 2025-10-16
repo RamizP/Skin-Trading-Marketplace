@@ -3,19 +3,14 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader, HTTPBearer, HTTPAuthorizationCredentials
 
-from auth.models import Base, User
-from auth.repository import AuthRepository
 from auth.services import AuthService
-from auth.schemas import UserResponse, UserCreate, UserLogin, BalanceCharge
-from auth.utils import AuthUtils
+from auth.schemas import UserResponse, UserCreate, UserLogin, BalanceCharge, TYPO3Auth
+from auth.strategy.AuthStrategy import TYPO3AuthStrategy
 
-from database import SessionLocal, engine, get_db
+from database import SessionLocal, engine, get_db, Base
 from sqlalchemy.orm import Session
 
 from Dependencies import is_admin, get_current_user
-
-import Exceptions
-import bcrypt
 
 # Initialize database tables
 Base.metadata.create_all(bind=engine)
@@ -29,24 +24,25 @@ app = FastAPI(
 
 # api_key_header = APIKeyHeader(name="Authentication")
 
-origins = ["*"]
+origins = [
+    "*"
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["*"],  # or list your actual methods
     allow_headers=["*"],
 )
 
-
 @app.post("/register")
-def register(user: UserCreate, request: Request, db: Session = Depends(get_db)):
+def register(user: UserCreate, db: Session = Depends(get_db)):
     return AuthService().register(user, db)
 
 
 @app.post("/login")
-def login(user: UserLogin, request: Request, db: Session = Depends(get_db)):
+def login(user: UserLogin, db: Session = Depends(get_db)):
     return AuthService().login(user, db)
 
 
@@ -55,7 +51,7 @@ def logout():
     return AuthService().logout()
 
 @app.get("/user/me", response_model=UserResponse)
-def me(request: Request, db: Session = Depends(get_db), user=Depends(get_current_user)):
+def me(user=Depends(get_current_user)):
     return user
 
 

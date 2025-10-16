@@ -11,7 +11,7 @@ class InventoryService:
         inventory = InventoryRepository().charge_my_inventory(
             charge_inventory, user, db
         )
-        if inventory is None:
+        if not inventory:
             raise HTTPException(status_code=404, detail="Inventory not found for user")
 
         return inventory

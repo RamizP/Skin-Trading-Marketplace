@@ -21,4 +21,4 @@ class UserInventory(Base):
     user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
     entity_id = Column(Integer, ForeignKey('entity.id'), nullable=False)
     entity_wear = Column(Enum(EntityWear), nullable=False, server_default="NONE")
-    in_sale = Column(String, default="False")
+    in_sale = Column(Boolean, default=0)

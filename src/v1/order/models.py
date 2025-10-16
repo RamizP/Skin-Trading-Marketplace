@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship
 from database import Base
 from enum import Enum as PyEnum
 
-class SideRarity(PyEnum):
+class Side(PyEnum):
     SELL = "sell"
     BUY = "buy"
 
@@ -13,8 +13,8 @@ class Order(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, nullable=False)
-    entity_id = Column(Integer, nullable=True)
-    entity_in_inventory_id = Column(Integer, nullable=False)
+    entity_id = Column(Integer, nullable=False)
+    entity_in_inventory_id = Column(Integer, nullable=True)
     price = Column(Float, nullable=False)
-    side = Column(Enum(SideRarity))
+    side = Column(Enum(Side))
     created_at = Column(DateTime, server_default=func.now())

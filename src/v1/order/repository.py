@@ -18,9 +18,6 @@ class OrderRepository:
 
     #     return db_post
     def get_order_by_id(db, id):
-        order: Order = (db.query(Order)
-                .with_for_update()
-                .filter(Order.id == id)
-                .order_by(Order.price.asc())
-                .first())
+        order: Order = db.query(Order).with_for_update().filter(Order.id == id).order_by(Order.price.asc()).first()
+
         return order

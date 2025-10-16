@@ -20,7 +20,7 @@ class InventoryResponse(BaseModel):
     entity_id: int
     entity_wear: EntityWear
     entity: EntityResponse
-    in_sale: str
+    in_sale: bool
 
     class Config:
         orm_mode = True
