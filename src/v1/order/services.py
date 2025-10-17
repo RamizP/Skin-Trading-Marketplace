@@ -23,6 +23,7 @@ class OrderService:
         try:
             self._validate_order_input(order)
             db.execute(text("BEGIN IMMEDIATE;"))
+
             inventory = self._get_inventory_item_locked(
                 db, order.entity_in_inventory_id, user.id
             )
@@ -35,7 +36,7 @@ class OrderService:
                 db_post = self._create_buy_order(order, user)
 
             else:
-                raise HTTPException(status_code=400, detail="Something went wrong.")
+                raise HTTPException(status_code=400, detail="Order is invalid.")
 
             db.add(db_post)
 
@@ -61,7 +62,7 @@ class OrderService:
 
             if order_to_buy.side == Side.BUY:
                 raise HTTPException(
-                    status_code=404, detail="It seems you cant buy this order."
+                    status_code=404, detail="Can't buy this Order."
                 )
 
 

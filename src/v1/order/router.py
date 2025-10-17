@@ -40,8 +40,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# @app.get("/orders")                 Get all Entities with it's lowest price on the market
+# @app.get("/orders/{entity_id}")     Get all oders for an exact entity but an entity id
+# @app.post("/orders")                Create an order
+# @app.post("/order/buy")             Buy an order
+# @app.delete("/order")               Delete an order
 
-# @app.get("/orders", response_model=List[EntityResponse])
 @app.get("/orders")
 def get_orders(
     db: Session = Depends(get_db)
