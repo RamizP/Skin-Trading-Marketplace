@@ -62,6 +62,6 @@ class TradingEngine:
                 return None
 
             if buyer_user:
-                buyer_serialize = UserResponse.model_validate(buyer_user)
+                buyer_serialized = UserResponse.model_validate(buyer_user)
                 order_buy = OrderBuy(order_id=order.id)
-                self.order_service.order_buy(order_buy, db, buyer_serialize)
+                self.order_service.order_buy(order_buy, db, buyer_serialized)
