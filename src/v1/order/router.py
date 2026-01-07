@@ -94,7 +94,7 @@ def create_order(
     db: Session = Depends(get_db),
     user: UserResponse = Depends(get_current_user),
 ):
-    return OrderService().create_order(order, db, user)
+    return OrderService(db).create_order(order, user)
 
 
 @app.post("/order/buy", response_model=OrderResponse)
@@ -103,7 +103,7 @@ def order_buy(
     db: Session = Depends(get_db),
     user: UserResponse = Depends(get_current_user),
 ):
-    return OrderService().order_buy(order_buy, db, user)
+    return OrderService(db).order_buy(order_buy, user)
 
 
 @app.delete("/order")
@@ -112,7 +112,7 @@ def order_delete(
     db: Session = Depends(get_db),
     user: UserResponse = Depends(get_current_user),
 ):
-    return OrderService().order_delete(order_delete, db, user)
+    return OrderService(db).order_delete(order_delete, user)
 
 
 def orders_with_entity(orders: List[Order], db: Session) -> List[OrderResponse]:

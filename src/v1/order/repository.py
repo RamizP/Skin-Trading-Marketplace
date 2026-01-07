@@ -1,8 +1,8 @@
-from order.schemas import OrderResponse, OrderCreate
 from order.models import Base, Order
 from database import SessionLocal, engine
 from sqlalchemy.orm import Session
 from order.models import Base, Order
+from order.schemas import OrderCreate, OrderDelete, OrderBuy, OrderResponse
 
 class OrderRepository:
     # def create_order(order: OrderCreate, db: Session):
@@ -19,5 +19,11 @@ class OrderRepository:
     #     return db_post
     def get_order_by_id(db, id):
         order: Order = db.query(Order).with_for_update().filter(Order.id == id).order_by(Order.price.asc()).first()
-
         return order
+
+
+    def add(db, Order):
+        ...
+
+    def delete(db, Order):
+        ...

@@ -30,7 +30,7 @@ app = FastAPI(
     openapi_url="/custom_openapi.json",
 )
 
-origins = ["https://c-marketing.ssen.ddev.site/"]
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
