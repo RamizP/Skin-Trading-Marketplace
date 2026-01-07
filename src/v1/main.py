@@ -15,7 +15,8 @@ from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI(title="Trading Engine")
 
 origins = [
-    "*"
+    "http://localhost:5173",
+    "https://localhost:5173",
 ]
 
 app.add_middleware(
@@ -32,5 +33,5 @@ app.include_router(inventory_router.router, prefix="", tags=["Inventory"])
 app.include_router(order_router.router, prefix="", tags=["Order"])
 
 if __name__ == "__main__":
-    #  uvicorn.run(app, host="0.0.0.0", port=8000, ssl_keyfile="key.pem", ssl_certfile="cert.pem")
-    uvicorn.run(app, port=8000, ssl_keyfile="key.pem", ssl_certfile="cert.pem")
+     uvicorn.run(app, host="0.0.0.0", port=8000, ssl_keyfile="key.pem", ssl_certfile="cert.pem")
+    # uvicorn.run(app, port=8000, ssl_keyfile="key.pem", ssl_certfile="cert.pem")

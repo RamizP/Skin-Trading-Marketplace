@@ -55,8 +55,9 @@ class JWTAuthStrategy(AuthStrategyInterface):
             key="Authentication",
             value=token,
             httponly=True,
-            samesite="lax",
-            secure=False,
+            secure=True,          # REQUIRED for HTTPS
+            samesite="none",      # REQUIRED for cross-origin
+            max_age=60 * 60 * 24, # 1 day (seconds)
         )
         return response
 
