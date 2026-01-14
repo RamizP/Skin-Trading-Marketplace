@@ -7,6 +7,10 @@ from inventory.models import Base, UserInventory
 
 
 class InventoryService:
+
+    def __init__(self, repository):
+        self.inventory_repository: InventoryRepository = repository
+
     def charge(charge_inventory: InventoryCharge, user: UserResponse, db):
         inventory = InventoryRepository().charge_my_inventory(
             charge_inventory, user, db
@@ -15,3 +19,6 @@ class InventoryService:
             raise HTTPException(status_code=404, detail="Inventory not found for user")
 
         return inventory
+
+    def create_inventory_item(self, item, user):
+        return self.inventory_repository.create_inventory_item(item, user)

@@ -1,0 +1,72 @@
+.entities-tab {
+  margin-top: 20px;
+}
+
+.create-entity {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.create-entity input {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  font-size: 14px;
+}
+
+.create-entity button {
+  padding: 8px 16px;
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.create-entity button:hover {
+  background: #4f46e5;
+}
+
+.entities-grid {
+  display: flex;
+  gap: 20px;
+}
+
+.entity-card {
+  background: #fff;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+  text-align: center;
+  transition: transform 0.2s;
+  max-width: 250px;
+}
+
+.entity-card:hover {
+  transform: translateY(-5px);
+}
+
+.entity-card h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: #111827;
+}
+
+.entity-card p {
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.entities-loading,
+.entities-error {
+  text-align: center;
+  font-size: 16px;
+  color: #6b7280;
+}
+.entities-error {
+  color: #ef4444;
+}

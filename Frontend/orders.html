@@ -27,8 +27,8 @@
 
     .order-card img,
     .entity-order-card img {
-      width: 50px;
-      height: 50px;
+      width: 100px;
+      height: auto;
       object-fit: contain;
       border-radius: 4px;
     }
@@ -63,12 +63,12 @@
   </section>
 
   <script>
-    const API_BASE = 'http://127.0.0.1:8000'; // Adjust if needed
+    const API_BASE = 'https://192.168.1.236:8000'; // Adjust if needed
     let entities = [];
 
     async function loadEntities() {
       try {
-        const res = await fetch(`${API_BASE}/entities`, { credentials: 'include' });
+        const res = await fetch(`${API_BASE}/entities`, {  });
         if (!res.ok) throw new Error('Failed to load entities');
         entities = await res.json();
 
@@ -102,7 +102,6 @@
         const res = await fetch(`${API_BASE}/orders`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
           body: JSON.stringify({ entity_id: entityId, price, amount }),
         });
         if (!res.ok) {
@@ -123,7 +122,6 @@
           headers: {
             'Content-Type': 'application/json',
           },
-          credentials: 'include',
           body: JSON.stringify({ order_id: orderId }),
         });
 
@@ -145,7 +143,6 @@
       try {
         const res = await fetch(`${API_BASE}/orders/${orderId}`, {
           method: 'DELETE',
-          credentials: 'include',
         });
         if (!res.ok) {
           const err = await res.json();
@@ -160,7 +157,7 @@
 
     async function loadOrders() {
       try {
-        const res = await fetch(`${API_BASE}/orders`, { credentials: 'include' });
+        const res = await fetch(`${API_BASE}/orders`, {  });
         if (!res.ok) throw new Error('Failed to load orders');
         const orders = await res.json();
 
@@ -203,7 +200,7 @@
       }
 
       try {
-        const res = await fetch(`${API_BASE}/orders/${entityId}`, { credentials: 'include' });
+        const res = await fetch(`${API_BASE}/orders/${entityId}`, {  });
         if (!res.ok) throw new Error('Failed to load orders for this entity');
         const orders = await res.json();
 
@@ -218,11 +215,10 @@
           const div = document.createElement('div');
           div.className = 'entity-order-card';
           div.innerHTML = `
-          <img src="images/${entity?.image_url || 'default.png'}" alt="${entity?.name}" />
+          <img src="${entity?.image_url || 'default.png'}" alt="${entity?.name}" />
           <div>
             <strong>${entity?.name}</strong> (${entity?.symbol})<br />
             Price: $${order.price.toFixed(2)}<br />
-            Amount: ${order.amount}<br />
             Created: ${new Date(order.created_at).toLocaleString()}
           </div>
           <button onclick="deleteOrder(${order.id})">Delete</button>

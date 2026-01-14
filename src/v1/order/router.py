@@ -11,11 +11,15 @@ from order.services import OrderService
 from order.models import Order
 from entity.models import Entity
 from inventory.models import UserInventory
+from inventory.repository import InventoryRepository
+from inventory.services import InventoryService
 
 from auth.schemas import UserResponse
+from auth.repository import AuthRepository
 from entity.schemas import EntityResponse
 from inventory.schemas import InventoryResponse
 from order.schemas import OrderResponse, OrderCreate, OrderBuy, OrderDelete
+from order.repository import OrderRepository
 
 # Initialize database tables
 Base.metadata.create_all(bind=engine)
@@ -40,29 +44,38 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def get_user_repository(db: Session = Depends(get_db)) -> OrderRepository:
+    return AuthRepository(db)
+
+def get_order_repository(db: Session = Depends(get_db)) -> OrderRepository:
+    return OrderRepository(db)
+
+def get_inventory_repository(db: Session = Depends(get_db)) -> InventoryRepository:
+    return InventoryRepository(db)
+
+def get_inventory_service(repository: InventoryRepository = Depends(get_inventory_repository)) -> InventoryRepository:
+    return InventoryService(repository)
+
+def get_order_service(db: Session = Depends(get_db), order_repository: OrderRepository = Depends(get_order_repository), user_repository: AuthRepository = Depends(get_user_repository), inventory_service: InventoryService = Depends(get_inventory_service)) -> OrderRepository:
+    return OrderService(db, order_repository, user_repository, inventory_service)
+
 # @app.get("/orders")                 Get all Entities with it's lowest price on the market
-# @app.get("/orders/{entity_id}")     Get all oders for an exact entity but an entity id
+# @app.get("/orders/{entity_id}")     Get all orders for an exact entity but an entity id
 # @app.post("/orders")                Create an order
 # @app.post("/order/buy")             Buy an order
 # @app.delete("/order")               Delete an order
 
 @app.get("/orders")
 def get_orders(
-    db: Session = Depends(get_db)
+    repository: OrderRepository = Depends(get_order_repository),
 ):
-    lowest_price = func.min(Order.price)
-
-    results = (
-        db.query(Entity, lowest_price)
-        .join(Order, Order.entity_id == Entity.id)
-        .group_by(Entity.id)
-        .all()
-    )
-    if not results:
+    orders = repository.get_all_orders_by_lowest_price()
+    if not orders:
         raise HTTPException(status_code=404, detail="No orders found.")
 
     response = []
-    for entity, price in results:
+
+    for entity, price in orders:
         response.append({
             "entity": entity,
             "lowest_price": float(price) if price is not None else None,
@@ -70,52 +83,44 @@ def get_orders(
 
     return response
 
-
-
 @app.get("/orders/{entity_id}", response_model=List[OrderResponse])
-def get_orders_by_entity(entity_id: int, db: Session = Depends(get_db)):
+def get_orders_by_entity(entity_id: int, repository: OrderRepository = Depends(get_order_repository)):
 
-    orders = (
-        db.query(Order, UserInventory)
-        .join(UserInventory, UserInventory.id == Order.entity_in_inventory_id)
-        .filter(Order.entity_id == entity_id)
-        .order_by(Order.price.asc())
-        .all()
-    )
+    orders = repository.get_orders_by_id(entity_id)
     if not orders:
         raise HTTPException(status_code=404, detail="No orders found for this entity.")
 
-    return orders_with_entity(orders, db)
+    return orders_with_entity(orders)
 
 
 @app.post("/orders")
 def create_order(
     order: OrderCreate,
-    db: Session = Depends(get_db),
     user: UserResponse = Depends(get_current_user),
+    order_service: OrderService = Depends(get_order_service),
 ):
-    return OrderService(db).create_order(order, user)
+    return order_service.create_order(order, user)
 
 
 @app.post("/order/buy", response_model=OrderResponse)
 def order_buy(
     order_buy: OrderBuy,
-    db: Session = Depends(get_db),
     user: UserResponse = Depends(get_current_user),
+    order_service: OrderService = Depends(get_order_service),
 ):
-    return OrderService(db).order_buy(order_buy, user)
+    return order_service.order_buy(order_buy, user, in_transaction=False)
 
 
 @app.delete("/order")
 def order_delete(
     order_delete: OrderDelete,
-    db: Session = Depends(get_db),
     user: UserResponse = Depends(get_current_user),
+    order_service: OrderService = Depends(get_order_service),
 ):
-    return OrderService(db).order_delete(order_delete, user)
+    return order_service.order_delete(order_delete, user)
 
 
-def orders_with_entity(orders: List[Order], db: Session) -> List[OrderResponse]:
+def orders_with_entity(orders: List[Order]) -> List[OrderResponse]:
     return [
         OrderResponse(
             **ord.__dict__,
@@ -125,10 +130,10 @@ def orders_with_entity(orders: List[Order], db: Session) -> List[OrderResponse]:
                 entity_id=inv.entity_id,
                 entity_wear=inv.entity_wear,
                 entity=EntityResponse.model_validate(
-                    db.query(Entity).filter(Entity.id == inv.entity_id).first()
+                    ent
                 ),
                 in_sale=inv.in_sale,
             )
         )
-        for ord, inv in orders
+        for ord, inv, ent in orders
     ]

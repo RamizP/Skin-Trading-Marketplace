@@ -13,25 +13,24 @@
     <title>Document</title>
     <style>
         body {
-            margin:0; padding: 0;
+            margin: 0;
+            padding: 0;
             font-family: 'Poppins', sans-serif;
             font-size: 16px;
         }
 
         .container {
             max-width: 1200px;
-            padding: 0 20px;
+            padding: 20px 20px;
             width: 100%;
             margin: 0 auto;
         }
 
         header {
-            background-color: red;
-            .container {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
+            background-color: rgb(255, 255, 255);
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
         }
 
         .logo {
@@ -45,8 +44,8 @@
             flex-direction: row;
             justify-content: space-between;
             align-items: center;
-            /* width: 40%; */
-            font-size: 16px;
+            width: 60%;
+            font-size: 17px;
             font-weight: 400;
         }
 
@@ -67,7 +66,7 @@
 
         .title_text {
             font-weight: 700;
-            font-size: 70px;
+            font-size: 55px;
             line-height: 140%;
             color: black;
         }
@@ -81,9 +80,10 @@
         }
 
         .about_image {
+            padding-top: 50px;
             width: 100%;
-            height: 520px;
-            object-fit:cover;
+            height: 630px;
+            object-fit: cover;
         }
     </style>
 
@@ -91,29 +91,30 @@
 
 <body>
 
-    <header class="header">
-        <div class="container">
-        <div class="logo"><img src="./logo.svg"></img></div>
-        <div class="nav">
+    <div class="container">
+        <header class="header">
+                <div class="logo"><img src="./logo.svg"></img></div>
+                <div class="nav">
 
 
                     <div class="link">Home</div>
 
-            <div class="link">About us</div>
-            <div class="link">Services</div>
-            <div class="link">Our Team</div>
-            <div class="contact">
-                <button class="contact_button">Contact Us</button>
-            </div>
-        </div>
-    </div>
+                    <div class="link">About us</div>
+                    <div class="link">Services</div>
+                    <div class="link">Our Team</div>
+                    <div class="contact">
+                        <button class="contact_button">Contact Us</button>
+                    </div>
+                </div>
 
-    </header>
-    <section class="about">
-        <div class="title_text">About</div>
-        <div class="about_text">It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout.</div>
-        <img class="about_image" src="./7c8fe6b5fdc4a29a652e2868b284bdfd36763913.jpg" alt="">
-    </section>
+        </header>
+        <section class="about">
+            <div class="title_text">About</div>
+            <div class="about_text">It is a long established fact that a reader will be distracted by the readable content
+                of a page when looking at its layout.</div>
+            <img class="about_image" src="./7c8fe6b5fdc4a29a652e2868b284bdfd36763913.jpg" alt="">
+        </section>
+    </div>
 
 </body>
 

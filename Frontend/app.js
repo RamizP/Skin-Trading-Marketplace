@@ -1,4 +1,4 @@
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "https://192.168.1.236:8000";
 
 // Utility to format timestamps
 function formatDate(dateStr) {
@@ -40,8 +40,7 @@ async function login() {
 // === Logout ===
 async function logout() {
   const res = await fetch(`${API_BASE}/logout`, {
-    method: "POST",
-    credentials: "include"
+    method: "POST"
   });
 
   const text = await res.text();
@@ -51,8 +50,7 @@ async function logout() {
 // === Get User Info ===
 async function getMe() {
   const res = await fetch(`${API_BASE}/me`, {
-    method: "GET",
-    credentials: "include"
+    method: "GET"
   });
 
   if (!res.ok) {
@@ -83,7 +81,6 @@ async function chargeBalance() {
 
   const res = await fetch(`${API_BASE}/balance-charge`, {
     method: "POST",
-    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ amount })
   });
@@ -100,8 +97,7 @@ async function chargeBalance() {
 // === Get Inventory ===
 async function getInventory() {
   const res = await fetch(`${API_BASE}/myinventory`, {
-    method: "GET",
-    credentials: "include"
+    method: "GET"
   });
 
   if (!res.ok) {
@@ -128,8 +124,7 @@ async function getInventory() {
 // === Get Orders ===
 async function getOrders() {
   const res = await fetch(`${API_BASE}/orders`, {
-    method: "GET",
-    credentials: "include"
+    method: "GET"
   });
 
   if (!res.ok) {
@@ -173,7 +168,6 @@ async function createOrder() {
 
     const res = await fetch(`${API_BASE}/orders`, {
       method: "POST",
-      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ entity_id, price, amount })
     });

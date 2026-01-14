@@ -34,3 +34,11 @@ class InventoryCharge(BaseModel):
     class Config:
         orm_mode = True
         from_attributes = True
+
+class InventoryItem(BaseModel):
+    entity_id: int
+    entity_wear: EntityWear
+
+    class Config:
+        orm_mode = True
+        from_attributes = True
