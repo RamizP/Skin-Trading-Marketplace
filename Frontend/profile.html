@@ -15,11 +15,11 @@
 <button id="logoutBtn">Logout</button>
 
 <script>
-  const API_BASE = 'http://127.0.0.1:8000';
+  const API_BASE = 'https://192.168.1.236:8000';
 
   async function loadProfile() {
     try {
-      const res = await fetch(`${API_BASE}/me`, {credentials: 'include'});
+      const res = await fetch(`${API_BASE}/me`, {});
       if (!res.ok) throw new Error('Failed to fetch profile');
       const user = await res.json();
 
@@ -39,7 +39,7 @@
   }
 
   document.getElementById('logoutBtn').onclick = async () => {
-    await fetch(`${API_BASE}/logout`, { method: 'POST', credentials: 'include' });
+    await fetch(`${API_BASE}/logout`, { method: 'POST' });
     window.location.href = 'login.html';
   };
 

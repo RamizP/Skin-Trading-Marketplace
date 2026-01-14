@@ -6,7 +6,10 @@ import bcrypt
 
 class AuthRepository:
 
-    def create_user(self, user: UserCreate, db):
+    def __init__(self, db):
+        self.db = db
+
+    def create_user(self, user: UserCreate):
 
         password_hashed = bcrypt.hashpw(
             user.password.encode("utf-8"), bcrypt.gensalt(14)
@@ -20,8 +23,11 @@ class AuthRepository:
             location=user.location,
         )
 
-        db.add(db_post)
-        db.commit()
-        db.refresh(db_post)
+        self.db.add(db_post)
+        self.db.commit()
+        self.db.refresh(db_post)
 
         return db_post
+
+    def get_user_by_id(self, user_id):
+        return (self.db.query(User).with_for_update().filter(User.id == user_id).first())

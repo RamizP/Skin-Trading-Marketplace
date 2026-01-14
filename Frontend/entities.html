@@ -27,11 +27,11 @@
 <div id="entities"></div>
 
 <script>
-  const API_BASE = 'http://127.0.0.1:8000';
+  const API_BASE = 'https://192.168.1.236:8000';
 
   async function loadEntities() {
     try {
-      const res = await fetch(`${API_BASE}/entities`, {credentials: 'include'});
+      const res = await fetch(`${API_BASE}/entities`, {});
       if (!res.ok) throw new Error('Could not fetch entities');
       const entities = await res.json();
 

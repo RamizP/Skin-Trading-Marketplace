@@ -34,3 +34,24 @@ class TradingEngine:
                       .first()
                   )
         return None
+
+    def execute_match(self, order, user, in_transaction):
+        # buy_request = OrderBuy(order_id=db_post.id)
+        # self.engine.match_buy_request(buy_request, user, self.db)
+        matching_order: Order = self.engine.find_match(order, self.db)
+        if not matching_order:
+            return
+
+        if matching_order.side == Side.SELL:
+            order_buy = OrderBuy(order_id=matching_order.id)
+            self.order_buy(order_buy, user, in_transaction, matched=True)
+        elif matching_order.side == Side.BUY:
+            order_buy = OrderBuy(order_id=order.id)
+            buyer_user = (
+                self.db.query(User)
+                .filter(
+                    User.id == matching_order.user_id
+                )
+                .first()
+            )
+            self.order_buy(order_buy, buyer_user, in_transaction, matched=True)

@@ -27,12 +27,12 @@
 <div id="inventoryList">Loading...</div>
 
 <script>
-  const API_BASE = 'http://127.0.0.1:8000';
+  const API_BASE = 'https://192.168.1.236:8000';
   let entities = [];
 
   async function loadEntities() {
     try {
-      const res = await fetch(`${API_BASE}/entities`, {credentials: 'include'});
+      const res = await fetch(`${API_BASE}/entities`, {});
       if (!res.ok) throw new Error('Failed to load entities');
       entities = await res.json();
     } catch (err) {
@@ -42,7 +42,7 @@
 
   async function loadInventory() {
     try {
-      const res = await fetch(`${API_BASE}/myinventory`, {credentials: 'include'});
+      const res = await fetch(`${API_BASE}/myinventory`, {});
       if (!res.ok) throw new Error('Failed to load inventory');
       const inventory = await res.json();
 
