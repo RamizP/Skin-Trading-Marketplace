@@ -1,7 +1,22 @@
-const API_URL = "https://192.168.1.236:8000";
+const API_URL = "https://127.0.0.1:8000";
 
 export async function getEntities(skip = 0, limit = 50) {
   const res = await fetch(`${API_URL}/orders`, {
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    const message = err.detail || "Failed to fetch entities";
+    if (message.toLowerCase().includes("no orders")) {
+      return [];
+    }
+    throw new Error(message);
+  }
+  return res.json();
+}
+
+export async function getAllEntities(skip = 0, limit = 50) {
+  const res = await fetch(`${API_URL}/entities?skip=${skip}&limit=${limit}`, {
     credentials: "include",
   });
   if (!res.ok) {

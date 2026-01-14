@@ -16,23 +16,45 @@ export default function InventoryTab() {
 
   if (loading) return <div className="inventory-loading">Loading...</div>;
   if (error) return <div className="inventory-error">{error}</div>;
-  if (!inventory.length) return <div className="inventory-empty">No skins found</div>;
+  if (!inventory.length) return <div className="inventory-empty">No inventory items found</div>;
 
   return (
-    <div className="inventory-grid">
-      {inventory.map((item) => (
-        <div key={item.id} className="inventory-card">
-          <img
-            src={item.entity.image_url || "/placeholder.png"}
-            alt={item.entity.name}
-            className="inventory-img"
-          />
-          <h3>{item.entity.name}</h3>
-          <h3>{item.entity.entity_rarity}</h3>
-          <p>Wear: {item.entity_wear}</p>
-          <p>For Sale: {item.in_sale ? "Yes" : "No"}</p>
+    <section className="inventory-section fade-in">
+      <div className="section-header">
+        <div>
+          <p className="eyebrow">Portfolio</p>
+          <h2>Your Inventory</h2>
+          <p className="muted">Track holdings, condition, and sale status.</p>
         </div>
-      ))}
-    </div>
+        <div className="pill">{inventory.length} items</div>
+      </div>
+      <div className="inventory-grid">
+        {inventory.map((item, index) => (
+          <div
+            key={item.id}
+            className="inventory-card"
+            style={{ animationDelay: `${index * 80}ms` }}
+          >
+            <img
+              src={item.entity.image_url || "/placeholder.png"}
+              alt={item.entity.name}
+              className="inventory-img"
+            />
+            <div className="inventory-body">
+              <h3>{item.entity.name}</h3>
+              <p className="inventory-rarity">{item.entity.entity_rarity}</p>
+              <div className="inventory-meta">
+                <span>Wear</span>
+                <strong>{item.entity_wear}</strong>
+              </div>
+              <div className="inventory-meta">
+                <span>For Sale</span>
+                <strong>{item.in_sale ? "Yes" : "No"}</strong>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
