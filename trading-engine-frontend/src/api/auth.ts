@@ -1,4 +1,4 @@
-const API_URL = "https://192.168.1.236:8000"; // adjust if needed
+const API_URL = "https://127.0.0.1:8000"; // adjust if needed
 
 export async function loginUser(username, password) {
   const response = await fetch(`${API_URL}/login`, {
@@ -39,4 +39,23 @@ export async function getMe() {
   }
 
   return response.json();
+}
+
+export async function chargeBalance(amount: number) {
+  const response = await fetch(`${API_URL}/me/balance/charge`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({ amount }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.detail || "Failed to charge balance");
+  }
+
+  return data;
 }

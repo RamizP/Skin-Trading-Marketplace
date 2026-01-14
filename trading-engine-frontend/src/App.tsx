@@ -4,20 +4,31 @@ import Dashboard from "./pages/Dashboard";
 import { getMe } from "./api/auth";
 
 export default function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const refreshUser = async () => {
+    try {
+      const profile = await getMe();
+      setUser(profile);
+    } catch {
+      setUser(null);
+    }
+  };
+
   useEffect(() => {
-    getMe()
-      .then(setUser)
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
+    refreshUser().finally(() => setLoading(false));
   }, []);
 
   const handleLogout = () => setUser(null);
+  const handleLogin = async () => {
+    setLoading(true);
+    await refreshUser();
+    setLoading(false);
+  };
 
-  if (loading) return <div>Loading...</div>;
-  if (!user) return <Login />;
+  if (loading) return <div className="app-loading fade-in">Loading Trading Engine...</div>;
+  if (!user) return <Login onLogin={handleLogin} />;
 
-  return <Dashboard onLogout={handleLogout} />;
+  return <Dashboard user={user} onLogout={handleLogout} onUserUpdate={setUser} />;
 }

@@ -2,7 +2,11 @@ import { useState } from "react";
 import { loginUser } from "../api/auth";
 import "../styles/Login.css";
 
-export default function Login() {
+type LoginProps = {
+  onLogin?: () => void | Promise<void>;
+};
+
+export default function Login({ onLogin }: LoginProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -15,6 +19,9 @@ export default function Login() {
 
     try {
       await loginUser(username, password);
+      if (onLogin) {
+        await onLogin();
+      }
       // redirect or load user context
     } catch (err) {
       setError(err.message);
@@ -24,18 +31,54 @@ export default function Login() {
   };
 
   return (
-    <div className="login-page">
-      <div className="login-card">
-        <h1>Sign in</h1>
-        <p className="subtitle">Welcome back</p>
+    <div className="login-shell fade-in">
+      <section className="login-hero">
+        <div className="hero-orb orb-one" aria-hidden="true"></div>
+        <div className="hero-orb orb-two" aria-hidden="true"></div>
+        <div className="brand">
+          <div className="brand-mark">TE</div>
+          <div>
+            <p className="brand-name">Trading Engine</p>
+            <p className="brand-tag">Precision order flow</p>
+          </div>
+        </div>
+        <h1>Trade with a clear signal.</h1>
+        <p className="hero-copy">
+          Track inventory, spot market moves, and act fast with your command
+          center for digital assets.
+        </p>
+        <div className="hero-grid">
+          <div className="hero-card">
+            <span className="eyebrow">Inventory</span>
+            <p>Instant visibility into every holding.</p>
+          </div>
+          <div className="hero-card">
+            <span className="eyebrow">Entities</span>
+            <p>Scan market listings and rarity tiers.</p>
+          </div>
+          <div className="hero-card">
+            <span className="eyebrow">Orders</span>
+            <p>Place, track, and manage open orders.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="login-card">
+        <div className="card-header">
+          <p className="eyebrow">Member access</p>
+          <h2>Sign in</h2>
+          <p className="subtitle">Use your Trading Engine account.</p>
+        </div>
 
         <form onSubmit={handleSubmit}>
           {error && <div className="error">{error}</div>}
 
           <div className="field">
+            <label htmlFor="username">Username</label>
             <input
-              type="username"
-              placeholder="username"
+              id="username"
+              type="text"
+              placeholder="Enter your handle"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
@@ -43,9 +86,11 @@ export default function Login() {
           </div>
 
           <div className="field">
+            <label htmlFor="password">Password</label>
             <input
+              id="password"
               type="password"
-              placeholder="Password"
+              placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -56,7 +101,7 @@ export default function Login() {
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
-      </div>
+      </section>
     </div>
   );
 }
