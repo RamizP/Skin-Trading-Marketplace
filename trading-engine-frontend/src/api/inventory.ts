@@ -1,4 +1,4 @@
-const API_URL = "https://127.0.0.1:8000";
+import { API_URL } from "./client";
 
 export async function getInventory() {
   const res = await fetch(`${API_URL}/inventory/me`, {

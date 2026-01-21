@@ -5,26 +5,38 @@
 }
 
 .orders-panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(31, 124, 255, 0.18);
   border-radius: var(--radius);
   padding: 22px;
   box-shadow: var(--shadow);
   display: grid;
   gap: 18px;
+  position: relative;
+  overflow: hidden;
+}
+
+.orders-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent, rgba(20, 241, 217, 0.12), transparent);
+  opacity: 0.5;
+  animation: scan 8s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .market-panel {
-  background: rgba(255, 255, 255, 0.92);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(224, 247, 255, 0.9));
 }
 
 .order-toggle {
   display: inline-flex;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(31, 124, 255, 0.3);
   border-radius: 999px;
   overflow: hidden;
   width: fit-content;
-  background: var(--surface-2);
+  background: rgba(31, 124, 255, 0.08);
 }
 
 .order-toggle button {
@@ -38,7 +50,7 @@
 }
 
 .order-toggle button.active {
-  background: var(--accent);
+  background: var(--accent-2);
   color: #ffffff;
 }
 
@@ -51,7 +63,7 @@
   display: grid;
   gap: 8px;
   font-size: 11px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-3);
   font-weight: 600;
@@ -59,7 +71,7 @@
 
 .order-form input,
 .order-form select {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(31, 124, 255, 0.22);
   border-radius: 12px;
   padding: 10px 12px;
   font-size: 14px;
@@ -76,8 +88,8 @@
 }
 
 .order-preview {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
+  background: rgba(20, 241, 217, 0.1);
+  border: 1px solid rgba(20, 241, 217, 0.25);
   border-radius: 12px;
   padding: 8px 12px;
   display: grid;
@@ -104,9 +116,9 @@
 }
 
 .status.success {
-  background: rgba(15, 118, 110, 0.12);
-  border: 1px solid rgba(15, 118, 110, 0.3);
-  color: #0f766e;
+  background: rgba(20, 241, 217, 0.12);
+  border: 1px solid rgba(20, 241, 217, 0.3);
+  color: #0a4a4a;
 }
 
 .status.error {
@@ -119,14 +131,14 @@
   display: grid;
   gap: 8px;
   font-size: 11px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-3);
   font-weight: 600;
 }
 
 .market-controls select {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(31, 124, 255, 0.22);
   border-radius: 12px;
   padding: 10px 12px;
   font-size: 14px;
@@ -145,8 +157,15 @@
   gap: 16px;
   padding: 14px;
   border-radius: 16px;
-  border: 1px dashed var(--border);
+  border: 1px solid rgba(31, 124, 255, 0.2);
   background: #ffffff;
+  box-shadow: 0 12px 30px rgba(14, 26, 36, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.order-row:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 40px rgba(31, 124, 255, 0.18);
 }
 
 .order-info {
