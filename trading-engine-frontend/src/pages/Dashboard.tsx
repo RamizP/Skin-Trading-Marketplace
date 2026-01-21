@@ -27,7 +27,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }: DashboardPro
     : "0.00";
   const tabTitle =
     activeTab === "dashboard"
-      ? "Dashboard"
+      ? "Command Overview"
       : activeTab === "inventory"
       ? "Inventory"
       : activeTab === "orders"
@@ -35,12 +35,12 @@ export default function Dashboard({ user, onLogout, onUserUpdate }: DashboardPro
       : "Market";
   const tabSubtitle =
     activeTab === "dashboard"
-      ? "Monitor account status, balances, and quick insights."
+      ? "Live balance, account metadata, and quick actions."
       : activeTab === "inventory"
-      ? "Review your holdings, rarity tiers, and sale status."
+      ? "Review holdings, condition, and sale flags."
       : activeTab === "orders"
-      ? "Create buy/sell orders and act on market listings."
-      : "Explore available entities and current pricing.";
+      ? "Place and track buy/sell orders in real time."
+      : "Scan entities and the lowest pricing lanes.";
 
   const handleLogout = async () => {
     await logoutUser();
@@ -72,23 +72,24 @@ export default function Dashboard({ user, onLogout, onUserUpdate }: DashboardPro
   if (!user) return <div className="dashboard-error">You are not logged in.</div>;
 
   return (
-    <div className="dashboard-container">
-      <aside className="sidebar">
+    <div className="dash-shell">
+      <aside className="dash-sidebar">
         <div className="brand-block">
           <div className="brand-mark">TE</div>
           <div>
             <p className="brand-name">Trading Engine</p>
-            <p className="brand-tag">Command center</p>
+            <p className="brand-tag">Command desk</p>
           </div>
         </div>
-        <nav>
+
+        <nav className="dash-nav">
           <p className="nav-label">Navigation</p>
           <ul>
             <li
               className={activeTab === "dashboard" ? "active" : ""}
               onClick={() => setActiveTab("dashboard")}
             >
-              Dashboard
+              Overview
             </li>
             <li
               className={activeTab === "inventory" ? "active" : ""}
@@ -110,27 +111,30 @@ export default function Dashboard({ user, onLogout, onUserUpdate }: DashboardPro
             </li>
           </ul>
         </nav>
+
         <div className="sidebar-footer">
           <p className="sidebar-label">Signed in as</p>
           <p className="sidebar-user">{displayName}</p>
         </div>
       </aside>
 
-      <div className="main-content fade-in">
-        <header className="topbar">
+      <div className="dash-main fade-in">
+        <header className="dash-topbar">
           <div className="topbar-title">
             <p className="eyebrow">Trading Engine</p>
             <h1>{tabTitle}</h1>
             <p className="muted">{tabSubtitle}</p>
           </div>
-          <button className="btn btn-outline" onClick={handleLogout}>
-            Logout
-          </button>
+          <div className="topbar-actions">
+            <button className="btn btn-outline" onClick={handleLogout}>
+              Logout
+            </button>
+          </div>
         </header>
 
         {activeTab === "dashboard" && (
-          <section className="stat-grid">
-            <div className="stat-card">
+          <section className="dash-grid">
+            <div className="stat-card primary">
               <div className="stat-label">Balance</div>
               <div className="stat-value">${balanceDisplay}</div>
               <p className="stat-caption">Available for new orders.</p>
@@ -141,7 +145,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }: DashboardPro
                   step="1"
                   value={topUpAmount}
                   onChange={(e) => setTopUpAmount(e.target.value)}
-                  placeholder="Amount"
+                  placeholder="Top-up amount"
                 />
                 <button
                   className="btn btn-ghost"
@@ -154,6 +158,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }: DashboardPro
               </div>
               {topUpError && <p className="form-error">{topUpError}</p>}
             </div>
+
             <div className="stat-card">
               <div className="stat-label">Account</div>
               <div className="stat-value">{displayName}</div>
@@ -166,6 +171,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }: DashboardPro
                 <strong>{user?.id ?? "-"}</strong>
               </div>
             </div>
+
             <div className="stat-card">
               <div className="stat-label">Access</div>
               <div className="stat-value">{user?.role || "-"}</div>
@@ -189,7 +195,6 @@ export default function Dashboard({ user, onLogout, onUserUpdate }: DashboardPro
           <OrdersTab user={user} onUserUpdate={onUserUpdate} />
         )}
       </div>
-
     </div>
   );
 }

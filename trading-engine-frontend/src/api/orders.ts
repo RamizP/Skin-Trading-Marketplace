@@ -1,4 +1,4 @@
-const API_URL = "https://192.168.1.236:8000";
+import { API_URL } from "./client";
 
 export async function getOrdersByEntity(entityId: number) {
   const res = await fetch(`${API_URL}/orders/${entityId}`, {

@@ -1,148 +1,206 @@
-.login-shell {
+.login-layout {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
   gap: 36px;
-  padding: 48px;
+  padding: 56px;
+  align-items: center;
 }
 
 .login-hero {
   position: relative;
-  border-radius: var(--radius);
-  padding: 48px;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
+  border-radius: calc(var(--radius) + 10px);
+  padding: 56px;
+  background: linear-gradient(140deg, #07131f, #0b2731 45%, #0a1e2a 100%);
+  border: 1px solid rgba(20, 241, 217, 0.25);
+  box-shadow: 0 40px 100px rgba(6, 16, 26, 0.55);
   overflow: hidden;
+  color: #e9f5ff;
 }
 
-.hero-orb {
+.login-hero::after {
+  content: "";
   position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(20, 241, 217, 0.08), transparent 60%);
+  pointer-events: none;
+}
+
+.hero-glow {
+  position: absolute;
+  inset: -35% auto auto -10%;
+  width: 420px;
+  height: 420px;
   border-radius: 999px;
-  filter: blur(0px);
-  opacity: 0.6;
+  background: radial-gradient(circle at 30% 30%, rgba(20, 241, 217, 0.9), transparent 70%);
+  opacity: 0.55;
+  animation: drift 12s ease-in-out infinite;
 }
 
-.orb-one {
-  width: 220px;
-  height: 220px;
-  top: -60px;
-  right: -40px;
-  background: radial-gradient(circle at 30% 30%, #f2c14e, transparent 65%);
+.hero-scan {
+  position: absolute;
+  right: -140px;
+  bottom: -160px;
+  width: 440px;
+  height: 440px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(31, 124, 255, 0.9), transparent 72%);
+  opacity: 0.5;
+  animation: drift 11s ease-in-out infinite;
+  animation-delay: 1.2s;
 }
 
-.orb-two {
-  width: 260px;
-  height: 260px;
-  bottom: -120px;
-  left: -80px;
-  background: radial-gradient(circle at 30% 30%, #0f766e, transparent 70%);
-}
-
-.brand {
+.brandline {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 32px;
+  gap: 14px;
+  margin-bottom: 30px;
+  position: relative;
+  z-index: 1;
 }
 
 .brand-mark {
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
-  background: var(--accent);
-  color: #ffffff;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(150deg, #14f1d9, #2ec1ff);
+  color: #04121c;
   display: grid;
   place-items: center;
-  font-weight: 700;
-  font-family: "Fraunces", serif;
-  letter-spacing: 0.06em;
+  font-weight: 800;
+  font-family: var(--font-display);
+  letter-spacing: 0.1em;
 }
 
 .brand-name {
   margin: 0;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 18px;
-  color: var(--ink);
+  color: #e9f5ff;
 }
 
 .brand-tag {
   margin: 4px 0 0;
-  color: var(--ink-2);
+  color: rgba(233, 245, 255, 0.7);
   font-size: 13px;
 }
 
 .login-hero h1 {
-  font-family: "Fraunces", serif;
-  font-size: clamp(32px, 3vw, 44px);
+  font-family: var(--font-display);
+  font-size: clamp(32px, 3.2vw, 46px);
   margin: 0 0 12px;
-  color: var(--ink);
+  color: #f4fdff;
+  position: relative;
+  z-index: 1;
 }
 
 .hero-copy {
   margin: 0;
   font-size: 16px;
-  color: var(--ink-2);
-  max-width: 420px;
+  color: rgba(233, 245, 255, 0.76);
+  max-width: 430px;
+  position: relative;
+  z-index: 1;
 }
 
-.hero-grid {
-  margin-top: 32px;
+.signal-grid {
+  margin-top: 30px;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
+  position: relative;
+  z-index: 1;
 }
 
-.hero-card {
+.signal-card {
   padding: 16px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(231, 217, 201, 0.8);
-  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  background: rgba(8, 22, 34, 0.6);
+  border: 1px solid rgba(20, 241, 217, 0.3);
+  box-shadow: 0 16px 40px rgba(6, 16, 26, 0.35);
   animation: floatUp 0.7s ease both;
+  backdrop-filter: blur(10px);
 }
 
-.hero-card:nth-child(1) {
-  animation-delay: 0.1s;
+.signal-card strong {
+  display: block;
+  font-size: 22px;
+  font-family: var(--font-display);
+  margin: 6px 0 8px;
 }
 
-.hero-card:nth-child(2) {
-  animation-delay: 0.2s;
+.signal-card p {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(233, 245, 255, 0.7);
 }
 
-.hero-card:nth-child(3) {
-  animation-delay: 0.3s;
+.signal-label {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 10px;
+  color: rgba(20, 241, 217, 0.85);
+  font-weight: 600;
 }
 
-.hero-card p {
-  margin: 6px 0 0;
-  font-size: 14px;
-  color: var(--ink-2);
+.ticker {
+  margin-top: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(8, 22, 34, 0.6);
+  border: 1px solid rgba(20, 241, 217, 0.3);
+  font-size: 12px;
+  color: rgba(233, 245, 255, 0.8);
+  position: relative;
+  z-index: 1;
 }
 
-.login-card {
+.ticker-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #14f1d9;
+  box-shadow: 0 0 12px rgba(20, 241, 217, 0.9);
+}
+
+.login-form {
   align-self: center;
   width: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.form-shell {
+  width: 100%;
   max-width: 420px;
-  justify-self: center;
-  background: var(--surface);
-  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.88);
+  border-radius: calc(var(--radius) + 6px);
   padding: 36px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(31, 124, 255, 0.2);
   box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
 }
 
-.card-header h2 {
+.form-shell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent, rgba(20, 241, 217, 0.1), transparent);
+  opacity: 0.6;
+  animation: scan 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.form-header h2 {
   margin: 8px 0 6px;
-  font-size: 26px;
-  font-family: "Fraunces", serif;
+  font-size: 24px;
+  font-family: var(--font-display);
   color: var(--ink);
-}
-
-.subtitle {
-  margin: 0 0 22px;
-  color: var(--ink-2);
-  font-size: 14px;
 }
 
 .field {
@@ -153,7 +211,7 @@
 
 .field label {
   font-size: 11px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--ink-3);
   font-weight: 600;
@@ -163,7 +221,7 @@
   width: 100%;
   padding: 12px 14px;
   background: #ffffff;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(31, 124, 255, 0.2);
   border-radius: 12px;
   color: var(--ink);
   font-size: 15px;
@@ -171,40 +229,51 @@
 }
 
 .field input::placeholder {
-  color: #9aa1ac;
+  color: #8fa2b2;
 }
 
 .field input:focus {
   outline: none;
-  border-color: rgba(15, 118, 110, 0.6);
-  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
+  border-color: rgba(31, 124, 255, 0.7);
+  box-shadow: 0 0 0 3px rgba(31, 124, 255, 0.18);
 }
 
-.login-card button {
+.form-shell button {
   width: 100%;
   margin-top: 8px;
   padding: 12px;
-  border-radius: 12px;
+  border-radius: 999px;
   border: none;
-  background: var(--accent);
-  color: white;
+  background: linear-gradient(135deg, #14f1d9 0%, #2ec1ff 55%, #1f7cff 100%);
+  color: #091019;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.1s ease;
+  transition: transform 0.12s ease, box-shadow 0.2s ease;
+  box-shadow: 0 18px 36px rgba(31, 124, 255, 0.32);
 }
 
-.login-card button:hover {
-  background: #d45f24;
+.form-shell button:hover {
+  transform: translateY(-1px);
 }
 
-.login-card button:active {
+.form-shell button:active {
   transform: translateY(1px);
 }
 
-.login-card button:disabled {
+.form-shell button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+  box-shadow: none;
+}
+
+.trust-row {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--ink-2);
 }
 
 .error {
@@ -218,7 +287,7 @@
 }
 
 @media (max-width: 1024px) {
-  .login-shell {
+  .login-layout {
     grid-template-columns: 1fr;
   }
 
@@ -228,12 +297,12 @@
 }
 
 @media (max-width: 640px) {
-  .login-shell {
+  .login-layout {
     padding: 24px;
   }
 
   .login-hero,
-  .login-card {
+  .form-shell {
     padding: 28px;
   }
 }

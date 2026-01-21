@@ -22,7 +22,6 @@ export default function Login({ onLogin }: LoginProps) {
       if (onLogin) {
         await onLogin();
       }
-      // redirect or load user context
     } catch (err) {
       setError(err.message);
     } finally {
@@ -31,76 +30,95 @@ export default function Login({ onLogin }: LoginProps) {
   };
 
   return (
-    <div className="login-shell fade-in">
+    <div className="login-layout fade-in">
       <section className="login-hero">
-        <div className="hero-orb orb-one" aria-hidden="true"></div>
-        <div className="hero-orb orb-two" aria-hidden="true"></div>
-        <div className="brand">
+        <div className="hero-glow" aria-hidden="true"></div>
+        <div className="hero-scan" aria-hidden="true"></div>
+        <header className="brandline">
           <div className="brand-mark">TE</div>
           <div>
             <p className="brand-name">Trading Engine</p>
-            <p className="brand-tag">Precision order flow</p>
+            <p className="brand-tag">Realtime execution hub</p>
+          </div>
+        </header>
+
+        <h1>Operate the market with clarity.</h1>
+        <p className="hero-copy">
+          A sharp command deck for inventory, orders, and the live entity market.
+          Built for focus, speed, and decisive moves.
+        </p>
+
+        <div className="signal-grid">
+          <div className="signal-card">
+            <span className="signal-label">Open Orders</span>
+            <strong>142</strong>
+            <p>Auto-sorted by spread and velocity.</p>
+          </div>
+          <div className="signal-card">
+            <span className="signal-label">Live Entities</span>
+            <strong>9.4k</strong>
+            <p>Filter by rarity, wear, and pricing gaps.</p>
+          </div>
+          <div className="signal-card">
+            <span className="signal-label">Portfolio Value</span>
+            <strong>$58.3k</strong>
+            <p>Precision balance with instant top-ups.</p>
           </div>
         </div>
-        <h1>Trade with a clear signal.</h1>
-        <p className="hero-copy">
-          Track inventory, spot market moves, and act fast with your command
-          center for digital assets.
-        </p>
-        <div className="hero-grid">
-          <div className="hero-card">
-            <span className="eyebrow">Inventory</span>
-            <p>Instant visibility into every holding.</p>
-          </div>
-          <div className="hero-card">
-            <span className="eyebrow">Entities</span>
-            <p>Scan market listings and rarity tiers.</p>
-          </div>
-          <div className="hero-card">
-            <span className="eyebrow">Orders</span>
-            <p>Place, track, and manage open orders.</p>
-          </div>
+
+        <div className="ticker">
+          <span>Engine Status</span>
+          <span className="ticker-dot"></span>
+          <span>Stable · 32ms latency · 99.9% uptime</span>
         </div>
       </section>
 
-      <section className="login-card">
-        <div className="card-header">
-          <p className="eyebrow">Member access</p>
-          <h2>Sign in</h2>
-          <p className="subtitle">Use your Trading Engine account.</p>
+      <section className="login-form">
+        <div className="form-shell">
+          <div className="form-header">
+            <p className="eyebrow">Secure access</p>
+            <h2>Sign in</h2>
+            <p className="muted">Enter your credentials to launch the desk.</p>
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            {error && <div className="error">{error}</div>}
+
+            <div className="field">
+              <label htmlFor="username">Username</label>
+              <input
+                id="username"
+                type="text"
+                placeholder="Trader handle"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="password">Password</label>
+              <input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            <button type="submit" disabled={loading}>
+              {loading ? "Authenticating..." : "Enter Trading Engine"}
+            </button>
+          </form>
+
+          <div className="trust-row">
+            <span>Encrypted sessions</span>
+            <span>Audit-ready logs</span>
+            <span>Role-based access</span>
+          </div>
         </div>
-
-        <form onSubmit={handleSubmit}>
-          {error && <div className="error">{error}</div>}
-
-          <div className="field">
-            <label htmlFor="username">Username</label>
-            <input
-              id="username"
-              type="text"
-              placeholder="Enter your handle"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="field">
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-
-          <button type="submit" disabled={loading}>
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
       </section>
     </div>
   );
