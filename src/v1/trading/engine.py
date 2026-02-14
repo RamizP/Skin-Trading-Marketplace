@@ -35,10 +35,10 @@ class TradingEngine:
                   )
         return None
 
-    def execute_match(self, order, user, in_transaction):
+    def execute_match(self, db, order, user, in_transaction):
         # buy_request = OrderBuy(order_id=db_post.id)
         # self.engine.match_buy_request(buy_request, user, self.db)
-        matching_order: Order = self.find_match(order, self.db)
+        matching_order: Order = self.find_match(order, db)
         if not matching_order:
             return
 
