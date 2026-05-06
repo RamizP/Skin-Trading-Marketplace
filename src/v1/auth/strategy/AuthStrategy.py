@@ -72,7 +72,7 @@ class JWTAuthStrategy(AuthStrategyInterface):
         if existing_user:
             raise HTTPException(status_code=400, detail="Username already exists")
 
-        created_user = AuthRepository().create_user(user_data, db)
+        created_user = AuthRepository(db).create_user(user_data)
         token = self.create_token(created_user.id)
         content = {"token": token}
         response = JSONResponse(content=content)
