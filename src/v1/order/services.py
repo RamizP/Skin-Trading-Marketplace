@@ -55,7 +55,7 @@ class OrderService:
                 self.db.add(inventory)
 
             self.db.flush()
-            self.engine.execute_match(db_post, user, in_transaction=True)
+            self.engine.execute_match(self.db, db_post, user, in_transaction=True)
 
             self.uow.commit()
         except Exception as e:
