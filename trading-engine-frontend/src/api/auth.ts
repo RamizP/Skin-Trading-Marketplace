@@ -1,6 +1,11 @@
 import { API_URL } from "./client";
+import type { User } from "./types";
 
-export async function loginUser(username, password) {
+type ApiError = {
+  detail?: string;
+};
+
+export async function loginUser(username: string, password: string) {
   const response = await fetch(`${API_URL}/login`, {
     method: "POST",
     headers: {
@@ -13,7 +18,7 @@ export async function loginUser(username, password) {
     }),
   });
 
-  const data = await response.json();
+  const data = (await response.json()) as ApiError;
 
   if (!response.ok) {
     throw new Error(data.detail || "Invalid credentials");
@@ -29,7 +34,7 @@ export async function logoutUser() {
   });
 }
 
-export async function getMe() {
+export async function getMe(): Promise<User> {
   const response = await fetch(`${API_URL}/user/me`, {
     credentials: "include",
   });
@@ -38,10 +43,10 @@ export async function getMe() {
     throw new Error("Not authenticated");
   }
 
-  return response.json();
+  return response.json() as Promise<User>;
 }
 
-export async function chargeBalance(amount: number) {
+export async function chargeBalance(amount: number): Promise<User> {
   const response = await fetch(`${API_URL}/me/balance/charge`, {
     method: "POST",
     headers: {
@@ -51,7 +56,7 @@ export async function chargeBalance(amount: number) {
     body: JSON.stringify({ amount }),
   });
 
-  const data = await response.json();
+  const data = (await response.json()) as User & ApiError;
 
   if (!response.ok) {
     throw new Error(data.detail || "Failed to charge balance");

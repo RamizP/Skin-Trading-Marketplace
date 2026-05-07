@@ -1,11 +1,32 @@
-import { useEffect, useState } from "react";
-import { getEntities, createEntity } from "../api/entities";
+import { useEffect, useMemo, useState } from "react";
+import { createEntity, getEntities } from "../api/entities";
+import type { MarketEntity, User } from "../api/types";
+import { formatCurrency, formatRarity, getErrorMessage } from "../utils/format";
 import "../styles/Entities.css";
 
-export default function EntitiesTab({ user }) {
-  const [entities, setEntities] = useState([]);
+type EntitiesProps = {
+  user: User;
+  onOpenItem?: (selection: { entityId: number }) => void;
+};
+
+const rarityOptions = [
+  "common",
+  "uncommon",
+  "rare",
+  "mythical",
+  "legendary",
+  "exceedingly_rare",
+];
+
+const rarityClass = (rarity?: string | null) =>
+  `rarity-${(rarity || "common").replace(/_/g, "-")}`;
+
+export default function EntitiesTab({ user, onOpenItem }: EntitiesProps) {
+  const [entities, setEntities] = useState<MarketEntity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [rarityFilter, setRarityFilter] = useState("all");
   const [newEntityName, setNewEntityName] = useState("");
   const [newEntitySymbol, setNewEntitySymbol] = useState("");
   const [newEntityRarity, setNewEntityRarity] = useState("uncommon");
@@ -13,18 +34,6 @@ export default function EntitiesTab({ user }) {
   const [newEntityCategoryId, setNewEntityCategoryId] = useState("");
   const [newEntitySubCategoryId, setNewEntitySubCategoryId] = useState("");
   const [creating, setCreating] = useState(false);
-  const rarityOptions = [
-    "common",
-    "uncommon",
-    "rare",
-    "mythical",
-    "legendary",
-    "exceedingly_rare",
-  ];
-
-  useEffect(() => {
-    fetchEntities();
-  }, []);
 
   const fetchEntities = async () => {
     setLoading(true);
@@ -33,14 +42,34 @@ export default function EntitiesTab({ user }) {
       const data = await getEntities();
       setEntities(data);
     } catch (err) {
-      setError(err.message);
+      setError(getErrorMessage(err, "Failed to fetch entities"));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCreate = async () => {
+  useEffect(() => {
+    void fetchEntities();
+  }, []);
+
+  const filteredEntities = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    return entities.filter((item) => {
+      const entity = item.entity;
+      const matchesQuery =
+        !normalizedQuery ||
+        entity.name.toLowerCase().includes(normalizedQuery) ||
+        (entity.symbol || "").toLowerCase().includes(normalizedQuery);
+      const matchesRarity =
+        rarityFilter === "all" || entity.entity_rarity === rarityFilter;
+      return matchesQuery && matchesRarity;
+    });
+  }, [entities, query, rarityFilter]);
+
+  const handleCreate = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     if (!newEntityName || !newEntitySymbol || !newEntityRarity) return;
+
     setCreating(true);
     try {
       await createEntity({
@@ -59,15 +88,15 @@ export default function EntitiesTab({ user }) {
       setNewEntityImage("");
       setNewEntityCategoryId("");
       setNewEntitySubCategoryId("");
-      fetchEntities(); // refresh list
+      await fetchEntities();
     } catch (err) {
-      alert(err.message);
+      setError(getErrorMessage(err, "Failed to create entity"));
     } finally {
       setCreating(false);
     }
   };
 
-  if (loading) return <div className="entities-loading">Loading...</div>;
+  if (loading) return <div className="entities-loading">Loading market...</div>;
   if (error) return <div className="entities-error">{error}</div>;
 
   return (
@@ -75,115 +104,137 @@ export default function EntitiesTab({ user }) {
       <div className="section-header">
         <div>
           <p className="eyebrow">Marketplace</p>
-          <h2>Entities</h2>
-          <p className="muted">Browse listings and monitor the lowest prices.</p>
+          <h2>Skin Listings</h2>
+          <p className="muted">Scan listed items by rarity, symbol, and floor price.</p>
         </div>
-        <div className="pill">{entities.length} listed</div>
+        <div className="pill">{filteredEntities.length} visible</div>
       </div>
-      {user?.role === "admin" && (
-        <div className="create-entity">
-          <div className="create-field">
-            <label htmlFor="entityName">New entity</label>
+
+      <div className="market-toolbar">
+        <label>
+          <span>Search</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="AK, knife, dragon..."
+          />
+        </label>
+        <label>
+          <span>Rarity</span>
+          <select
+            value={rarityFilter}
+            onChange={(event) => setRarityFilter(event.target.value)}
+          >
+            <option value="all">All rarities</option>
+            {rarityOptions.map((rarity) => (
+              <option key={rarity} value={rarity}>
+                {formatRarity(rarity)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {user.role === "admin" && (
+        <form className="create-entity" onSubmit={handleCreate}>
+          <label>
+            <span>New skin</span>
             <input
-              id="entityName"
               type="text"
-              placeholder="Entity name"
+              placeholder="Item name"
               value={newEntityName}
-              onChange={(e) => setNewEntityName(e.target.value)}
+              onChange={(event) => setNewEntityName(event.target.value)}
             />
-          </div>
-          <div className="create-field">
-            <label htmlFor="entitySymbol">Symbol</label>
+          </label>
+          <label>
+            <span>Symbol</span>
             <input
-              id="entitySymbol"
               type="text"
               placeholder="Symbol"
               value={newEntitySymbol}
-              onChange={(e) => setNewEntitySymbol(e.target.value)}
+              onChange={(event) => setNewEntitySymbol(event.target.value)}
             />
-          </div>
-          <div className="create-field">
-            <label htmlFor="entityRarity">Rarity</label>
+          </label>
+          <label>
+            <span>Rarity</span>
             <select
-              id="entityRarity"
               value={newEntityRarity}
-              onChange={(e) => setNewEntityRarity(e.target.value)}
+              onChange={(event) => setNewEntityRarity(event.target.value)}
             >
               {rarityOptions.map((rarity) => (
                 <option key={rarity} value={rarity}>
-                  {rarity.replace("_", " ")}
+                  {formatRarity(rarity)}
                 </option>
               ))}
             </select>
-          </div>
-          <div className="create-field">
-            <label htmlFor="entityImage">Image URL</label>
+          </label>
+          <label>
+            <span>Image URL</span>
             <input
-              id="entityImage"
               type="text"
               placeholder="https://"
               value={newEntityImage}
-              onChange={(e) => setNewEntityImage(e.target.value)}
+              onChange={(event) => setNewEntityImage(event.target.value)}
             />
-          </div>
-          <div className="create-field">
-            <label htmlFor="entityCategory">Category ID</label>
+          </label>
+          <label>
+            <span>Category</span>
             <input
-              id="entityCategory"
               type="number"
               placeholder="Optional"
               value={newEntityCategoryId}
-              onChange={(e) => setNewEntityCategoryId(e.target.value)}
+              onChange={(event) => setNewEntityCategoryId(event.target.value)}
             />
-          </div>
-          <div className="create-field">
-            <label htmlFor="entitySubCategory">Sub-category ID</label>
+          </label>
+          <label>
+            <span>Sub-category</span>
             <input
-              id="entitySubCategory"
               type="number"
               placeholder="Optional"
               value={newEntitySubCategoryId}
-              onChange={(e) => setNewEntitySubCategoryId(e.target.value)}
+              onChange={(event) => setNewEntitySubCategoryId(event.target.value)}
             />
-          </div>
+          </label>
           <button
             className="btn"
-            onClick={handleCreate}
+            type="submit"
             disabled={creating || !newEntityName || !newEntitySymbol}
           >
-            {creating ? "Creating..." : "Create Entity"}
+            {creating ? "Creating" : "Create"}
           </button>
-        </div>
+        </form>
       )}
 
-      <div className="entities-grid">
-        {entities.map((entity, index) => (
-          <div
-            key={entity.entity.id}
-            className="entity-card"
-            style={{ animationDelay: `${index * 70}ms` }}
-          >
-            <img
-              src={entity.entity.image_url || "/placeholder.png"}
-              alt={entity.entity.name}
-              className="entity-img"
-            />
-            <div className="entity-body">
-              <h3>{entity.entity.name}</h3>
-              <p className="entity-rarity">{entity.entity.entity_rarity}</p>
-              <div className="entity-meta">
-                <span>Lowest Price</span>
-                <strong>{entity.lowest_price}</strong>
+      <div className="skin-grid">
+          {filteredEntities.map((item, index) => (
+            <button
+              key={item.entity.id}
+              className={`skin-card ${rarityClass(item.entity.entity_rarity)}`}
+              type="button"
+              style={{ animationDelay: `${index * 35}ms` }}
+              onClick={() => onOpenItem?.({ entityId: item.entity.id })}
+            >
+              <div className="skin-image-frame">
+                {item.entity.image_url ? (
+                  <img src={item.entity.image_url} alt={item.entity.name} />
+                ) : (
+                  <span className="skin-placeholder">{item.entity.symbol || "TE"}</span>
+                )}
               </div>
-            </div>
-            {/* Optionally show more info, like category/subcategory */}
-          </div>
-        ))}
+              <span className="skin-rarity">{formatRarity(item.entity.entity_rarity)}</span>
+              <strong>{item.entity.name}</strong>
+              <div className="skin-price">
+                <span>Floor</span>
+                <b>{item.lowest_price ? formatCurrency(item.lowest_price) : "No asks"}</b>
+              </div>
+              <span className="skin-action">Open Item</span>
+            </button>
+          ))}
       </div>
-      {!entities.length && (
-        <p className="entities-empty">No market listings yet.</p>
+      {!filteredEntities.length && (
+        <p className="entities-empty">No market listings match your filters.</p>
       )}
-
     </section>
   );
 }

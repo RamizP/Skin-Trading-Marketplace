@@ -3,11 +3,13 @@ import { getAllEntities } from "../api/entities";
 import { getInventory } from "../api/inventory";
 import { buyOrder, createOrder, deleteOrder, getOrdersByEntity } from "../api/orders";
 import { getMe } from "../api/auth";
+import type { Entity, InventoryItem, Order, User } from "../api/types";
+import { formatCurrency, formatRarity, getErrorMessage } from "../utils/format";
 import "../styles/Orders.css";
 
 type OrdersProps = {
-  user: any;
-  onUserUpdate?: (user: any) => void;
+  user: User;
+  onUserUpdate?: (user: User) => void;
 };
 
 type StatusMessage = {
@@ -17,13 +19,14 @@ type StatusMessage = {
 
 export default function OrdersTab({ user, onUserUpdate }: OrdersProps) {
   const [mode, setMode] = useState<"buy" | "sell">("sell");
-  const [entities, setEntities] = useState<any[]>([]);
-  const [inventory, setInventory] = useState<any[]>([]);
+  const [entities, setEntities] = useState<Entity[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [marketEntityId, setMarketEntityId] = useState<number | "">("");
   const [selectedEntityId, setSelectedEntityId] = useState<number | "">("");
   const [selectedInventoryId, setSelectedInventoryId] = useState<number | "">("");
   const [price, setPrice] = useState("");
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [trackedBuyOrders, setTrackedBuyOrders] = useState<Order[]>([]);
   const [loadingMarket, setLoadingMarket] = useState(false);
   const [loadingInventory, setLoadingInventory] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -33,35 +36,41 @@ export default function OrdersTab({ user, onUserUpdate }: OrdersProps) {
 
   const sellableInventory = useMemo(
     () => inventory.filter((item) => !item.in_sale),
-    [inventory]
+    [inventory],
   );
 
   const selectedInventory = useMemo(
     () => sellableInventory.find((item) => item.id === Number(selectedInventoryId)),
-    [sellableInventory, selectedInventoryId]
+    [sellableInventory, selectedInventoryId],
   );
 
   const selectedEntity = useMemo(
     () => entities.find((item) => item.id === Number(selectedEntityId)),
-    [entities, selectedEntityId]
+    [entities, selectedEntityId],
   );
 
   const marketEntity = useMemo(
     () => entities.find((item) => item.id === Number(marketEntityId)),
-    [entities, marketEntityId]
+    [entities, marketEntityId],
   );
 
-  const formatPrice = (value: number) =>
-    Number.isFinite(value)
-      ? value.toLocaleString("en-US", { minimumFractionDigits: 2 })
-      : "0.00";
+  const getEntityById = (entityId: number) =>
+    entities.find((entity) => entity.id === entityId);
+
+  const lowestAsk = useMemo(() => {
+    const prices = orders
+      .map((order) => Number(order.price))
+      .filter((value) => Number.isFinite(value));
+    if (!prices.length) return null;
+    return Math.min(...prices);
+  }, [orders]);
 
   const loadEntities = async () => {
     try {
       const data = await getAllEntities(0, 100);
       setEntities(data);
     } catch (err) {
-      setStatus({ type: "error", text: err.message });
+      setStatus({ type: "error", text: getErrorMessage(err, "Failed to load entities") });
     }
   };
 
@@ -70,7 +79,7 @@ export default function OrdersTab({ user, onUserUpdate }: OrdersProps) {
     try {
       const data = await getInventory();
       setInventory(data);
-    } catch (err) {
+    } catch {
       setInventory([]);
     } finally {
       setLoadingInventory(false);
@@ -84,13 +93,9 @@ export default function OrdersTab({ user, onUserUpdate }: OrdersProps) {
       const data = await getOrdersByEntity(entityId);
       setOrders(data);
     } catch (err) {
-      const message = err.message || "Failed to fetch orders";
+      const message = getErrorMessage(err, "Failed to fetch orders");
       setOrders([]);
-      if (message.toLowerCase().includes("no orders")) {
-        setMarketError("");
-      } else {
-        setMarketError(message);
-      }
+      setMarketError(message.toLowerCase().includes("no orders") ? "" : message);
     } finally {
       setLoadingMarket(false);
     }
@@ -101,14 +106,14 @@ export default function OrdersTab({ user, onUserUpdate }: OrdersProps) {
     try {
       const updated = await getMe();
       onUserUpdate(updated);
-    } catch (err) {
-      // ignore refresh errors
+    } catch {
+      // The order action already completed; keep the existing user if refresh fails.
     }
   };
 
   useEffect(() => {
-    loadEntities();
-    loadInventory();
+    void loadEntities();
+    void loadInventory();
   }, []);
 
   useEffect(() => {
@@ -140,7 +145,7 @@ export default function OrdersTab({ user, onUserUpdate }: OrdersProps) {
 
   useEffect(() => {
     if (marketEntityId) {
-      loadOrders(Number(marketEntityId));
+      void loadOrders(Number(marketEntityId));
     }
   }, [marketEntityId]);
 
@@ -166,21 +171,27 @@ export default function OrdersTab({ user, onUserUpdate }: OrdersProps) {
     try {
       const payload =
         mode === "buy"
-          ? { price: priceValue, side: "buy", entity_id: Number(selectedEntityId) }
+          ? { price: priceValue, side: "buy" as const, entity_id: Number(selectedEntityId) }
           : {
               price: priceValue,
-              side: "sell",
+              side: "sell" as const,
               entity_in_inventory_id: Number(selectedInventoryId),
             };
-      await createOrder(payload);
+      const createdOrder = await createOrder(payload);
       setPrice("");
+      if (createdOrder.side === "buy") {
+        setTrackedBuyOrders((current) => [
+          createdOrder,
+          ...current.filter((order) => order.id !== createdOrder.id),
+        ]);
+      }
       await loadInventory();
       if (marketEntityId) {
         await loadOrders(Number(marketEntityId));
       }
       setStatus({ type: "success", text: "Order created successfully." });
     } catch (err) {
-      setStatus({ type: "error", text: err.message });
+      setStatus({ type: "error", text: getErrorMessage(err, "Failed to create order") });
     } finally {
       setCreating(false);
     }
@@ -196,7 +207,7 @@ export default function OrdersTab({ user, onUserUpdate }: OrdersProps) {
       await refreshUser();
       setStatus({ type: "success", text: "Order purchased successfully." });
     } catch (err) {
-      setStatus({ type: "error", text: err.message });
+      setStatus({ type: "error", text: getErrorMessage(err, "Failed to buy order") });
     } finally {
       setPendingOrderId(null);
     }
@@ -207,11 +218,14 @@ export default function OrdersTab({ user, onUserUpdate }: OrdersProps) {
     setStatus(null);
     try {
       await deleteOrder(orderId);
+      setTrackedBuyOrders((current) =>
+        current.filter((order) => order.id !== orderId),
+      );
       await loadOrders(Number(marketEntityId));
       await loadInventory();
       setStatus({ type: "success", text: "Order cancelled." });
     } catch (err) {
-      setStatus({ type: "error", text: err.message });
+      setStatus({ type: "error", text: getErrorMessage(err, "Failed to cancel order") });
     } finally {
       setPendingOrderId(null);
     }
@@ -219,17 +233,17 @@ export default function OrdersTab({ user, onUserUpdate }: OrdersProps) {
 
   return (
     <section className="orders-shell fade-in">
-      <div className="orders-panel">
+      <div className="order-ticket">
         <div className="section-header">
           <div>
             <p className="eyebrow">Trading</p>
             <h2>Create Order</h2>
-            <p className="muted">Place buy or sell orders instantly.</p>
+            <p className="muted">Pick the item, set price, and publish to the book.</p>
           </div>
-          <div className="pill">{mode === "sell" ? "Sell" : "Buy"}</div>
+          <div className={`pill side-${mode}`}>{mode === "sell" ? "Sell" : "Buy"}</div>
         </div>
 
-        <div className="order-toggle">
+        <div className="order-toggle" role="group" aria-label="Order side">
           <button
             className={mode === "sell" ? "active" : ""}
             type="button"
@@ -246,52 +260,57 @@ export default function OrdersTab({ user, onUserUpdate }: OrdersProps) {
           </button>
         </div>
 
-        {mode === "sell" ? (
-          <div className="order-form">
+        <div className="ticket-preview">
+          <div className="ticket-art">
+            {mode === "sell" && selectedInventory?.entity.image_url ? (
+              <img src={selectedInventory.entity.image_url} alt={selectedInventory.entity.name} />
+            ) : mode === "buy" && selectedEntity?.image_url ? (
+              <img src={selectedEntity.image_url} alt={selectedEntity.name} />
+            ) : (
+              <span>{mode === "sell" ? selectedInventory?.entity.symbol || "TE" : selectedEntity?.symbol || "TE"}</span>
+            )}
+          </div>
+          <div>
+            <span>{mode === "sell" ? "Listing" : "Bid target"}</span>
+            <strong>
+              {mode === "sell"
+                ? selectedInventory?.entity.name || "Select inventory"
+                : selectedEntity?.name || "Select entity"}
+            </strong>
+            <small>
+              {mode === "sell"
+                ? selectedInventory?.entity.entity_rarity
+                  ? formatRarity(selectedInventory.entity.entity_rarity)
+                  : "No rarity"
+                : selectedEntity?.entity_rarity
+                  ? formatRarity(selectedEntity.entity_rarity)
+                  : "No rarity"}
+            </small>
+          </div>
+        </div>
+
+        <div className="order-form">
+          {mode === "sell" ? (
             <label>
-              Inventory Item
+              <span>Inventory Item</span>
               <select
                 value={selectedInventoryId}
-                onChange={(e) => setSelectedInventoryId(Number(e.target.value))}
+                onChange={(event) => setSelectedInventoryId(Number(event.target.value))}
                 disabled={loadingInventory || !sellableInventory.length}
               >
                 {sellableInventory.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.entity?.name} ({item.entity?.symbol}) · Wear {item.entity_wear}
+                    {item.entity.name} ({item.entity.symbol}) - Wear {item.entity_wear}
                   </option>
                 ))}
               </select>
             </label>
+          ) : (
             <label>
-              Price
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="0.00"
-              />
-            </label>
-            <div className="order-actions">
-              <button className="btn" onClick={handleCreateOrder} disabled={creating}>
-                {creating ? "Listing..." : "List For Sale"}
-              </button>
-              {selectedInventory && (
-                <div className="order-preview">
-                  <span>{selectedInventory.entity?.name}</span>
-                  <strong>{selectedInventory.entity?.entity_rarity}</strong>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="order-form">
-            <label>
-              Entity
+              <span>Entity</span>
               <select
                 value={selectedEntityId}
-                onChange={(e) => setSelectedEntityId(Number(e.target.value))}
+                onChange={(event) => setSelectedEntityId(Number(event.target.value))}
                 disabled={!entities.length}
               >
                 {entities.map((entity) => (
@@ -301,59 +320,84 @@ export default function OrdersTab({ user, onUserUpdate }: OrdersProps) {
                 ))}
               </select>
             </label>
-            <label>
-              Price
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="0.00"
-              />
-            </label>
-            <div className="order-actions">
-              <button className="btn" onClick={handleCreateOrder} disabled={creating}>
-                {creating ? "Submitting..." : "Place Buy Order"}
-              </button>
-              {selectedEntity && (
-                <div className="order-preview">
-                  <span>{selectedEntity.name}</span>
-                  <strong>{selectedEntity.entity_rarity}</strong>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+          )}
+
+          <label>
+            <span>Limit Price</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={price}
+              onChange={(event) => setPrice(event.target.value)}
+              placeholder="0.00"
+            />
+          </label>
+
+          <button className="btn" type="button" onClick={handleCreateOrder} disabled={creating}>
+            {creating ? "Submitting" : mode === "sell" ? "List For Sale" : "Place Buy Order"}
+          </button>
+        </div>
 
         {loadingInventory && <p className="helper">Loading inventory...</p>}
         {!loadingInventory && mode === "sell" && !sellableInventory.length && (
           <p className="helper">No available inventory to sell.</p>
         )}
 
-        {status && (
-          <div className={`status ${status.type}`}>{status.text}</div>
+        {status && <div className={`status ${status.type}`}>{status.text}</div>}
+
+        {trackedBuyOrders.length > 0 && (
+          <div className="my-buy-orders">
+            <div>
+              <p className="eyebrow">Your Buy Orders</p>
+              <h3>Open bids</h3>
+            </div>
+            {trackedBuyOrders.map((order) => {
+              const entity = getEntityById(order.entity_id);
+              return (
+                <div className="my-buy-row" key={order.id}>
+                  <div>
+                    <strong>{entity?.name || `Entity #${order.entity_id}`}</strong>
+                    <small>{formatRarity(entity?.entity_rarity)}</small>
+                  </div>
+                  <div>
+                    <span>Bid</span>
+                    <strong>{formatCurrency(order.price)}</strong>
+                  </div>
+                  <button
+                    className="btn btn-outline"
+                    type="button"
+                    onClick={() => handleCancelOrder(order.id)}
+                    disabled={pendingOrderId === order.id}
+                  >
+                    {pendingOrderId === order.id ? "Cancelling" : "Cancel"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
 
-      <div className="orders-panel market-panel">
-        <div className="section-header">
+      <div className="book-panel">
+        <div className="book-header">
           <div>
             <p className="eyebrow">Market</p>
             <h2>Order Book</h2>
-            <p className="muted">Live sell listings for the selected entity.</p>
+            <p className="muted">Live asks for the selected skin.</p>
           </div>
-          <div className="pill">
-            {marketEntity ? marketEntity.name : "Select entity"}
+          <div className="book-price">
+            <span>Lowest Ask</span>
+            <strong>{lowestAsk ? formatCurrency(lowestAsk) : "-"}</strong>
           </div>
         </div>
 
         <div className="market-controls">
           <label>
-            Entity
+            <span>Entity</span>
             <select
               value={marketEntityId}
-              onChange={(e) => setMarketEntityId(Number(e.target.value))}
+              onChange={(event) => setMarketEntityId(Number(event.target.value))}
               disabled={!entities.length}
             >
               {entities.map((entity) => (
@@ -365,51 +409,64 @@ export default function OrdersTab({ user, onUserUpdate }: OrdersProps) {
           </label>
         </div>
 
+        <div className="book-feature">
+          <div className="book-feature-art">
+            {marketEntity?.image_url ? (
+              <img src={marketEntity.image_url} alt={marketEntity.name} />
+            ) : (
+              <span>{marketEntity?.symbol || "TE"}</span>
+            )}
+          </div>
+          <div>
+            <span>Selected Market</span>
+            <strong>{marketEntity?.name || "Select entity"}</strong>
+            <small>{marketEntity?.entity_rarity ? formatRarity(marketEntity.entity_rarity) : "No rarity"}</small>
+          </div>
+        </div>
+
         {loadingMarket && <p className="helper">Loading orders...</p>}
-        {!loadingMarket && marketError && (
-          <p className="helper error">{marketError}</p>
-        )}
+        {!loadingMarket && marketError && <p className="helper error">{marketError}</p>}
 
         {!loadingMarket && !marketError && (
-          <div className="order-list">
-            {orders.length === 0 && (
-              <p className="helper">No active sell orders.</p>
-            )}
+          <div className="order-book-list">
+            {orders.length === 0 && <p className="helper">No active sell orders.</p>}
             {orders.map((order) => (
-              <div key={order.id} className="order-row">
-                <div className="order-info">
-                  <div className="order-entity">
-                    <span>{order.inventory?.entity?.name || "Entity"}</span>
-                    <strong>{order.inventory?.entity?.entity_rarity || "-"}</strong>
-                  </div>
-                  <div className="order-meta">
-                    <span>Price</span>
-                    <strong>${formatPrice(order.price)}</strong>
-                  </div>
-                  <div className="order-meta">
-                    <span>Wear</span>
-                    <strong>{order.inventory?.entity_wear ?? "-"}</strong>
-                  </div>
+              <div key={order.id} className="book-row">
+                <div className="book-item">
+                  <strong>{order.inventory?.entity?.name || marketEntity?.name || "Entity"}</strong>
+                  <small>
+                    {order.inventory?.entity?.entity_rarity
+                      ? formatRarity(order.inventory.entity.entity_rarity)
+                      : formatRarity(marketEntity?.entity_rarity)}
+                  </small>
                 </div>
-                <div className="order-actions">
-                  {order.user_id === user?.id ? (
-                    <button
-                      className="btn btn-outline"
-                      onClick={() => handleCancelOrder(order.id)}
-                      disabled={pendingOrderId === order.id}
-                    >
-                      {pendingOrderId === order.id ? "Cancelling..." : "Cancel"}
-                    </button>
-                  ) : (
-                    <button
-                      className="btn"
-                      onClick={() => handleBuyOrder(order.id)}
-                      disabled={pendingOrderId === order.id}
-                    >
-                      {pendingOrderId === order.id ? "Buying..." : "Buy"}
-                    </button>
-                  )}
+                <div>
+                  <span>Wear</span>
+                  <strong>{order.inventory?.entity_wear ?? "-"}</strong>
                 </div>
+                <div>
+                  <span>Ask</span>
+                  <strong>{formatCurrency(order.price)}</strong>
+                </div>
+                {order.user_id === user.id ? (
+                  <button
+                    className="btn btn-outline"
+                    type="button"
+                    onClick={() => handleCancelOrder(order.id)}
+                    disabled={pendingOrderId === order.id}
+                  >
+                    {pendingOrderId === order.id ? "Cancelling" : "Cancel"}
+                  </button>
+                ) : (
+                  <button
+                    className="btn"
+                    type="button"
+                    onClick={() => handleBuyOrder(order.id)}
+                    disabled={pendingOrderId === order.id}
+                  >
+                    {pendingOrderId === order.id ? "Buying" : "Buy"}
+                  </button>
+                )}
               </div>
             ))}
           </div>
