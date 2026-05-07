@@ -1,0 +1,248 @@
+.item-page {
+  display: grid;
+  gap: 16px;
+}
+
+.item-back {
+  width: fit-content;
+}
+
+.item-hero {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.item-art {
+  min-height: 320px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--rarity);
+  border-top: 4px solid var(--rarity);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--rarity), transparent 84%), transparent),
+    #151614;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.item-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 26px;
+}
+
+.item-art span {
+  width: 112px;
+  height: 112px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--rarity);
+  color: #15120c;
+  font-family: var(--font-display);
+  font-size: 30px;
+}
+
+.item-summary {
+  min-width: 0;
+  display: grid;
+  align-content: space-between;
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.item-summary h2 {
+  margin-top: 6px;
+  font-size: 42px;
+  line-height: 1.05;
+}
+
+.item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.item-tags span {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #171816;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.item-stats,
+.item-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.item-stats div,
+.action-panel,
+.asks-panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.item-stats div {
+  min-height: 98px;
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  padding: 14px;
+}
+
+.item-stats span,
+.action-panel label span,
+.ask-row span {
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.item-stats strong {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 26px;
+}
+
+.action-panel {
+  min-height: 260px;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.action-panel h3 {
+  margin-top: 4px;
+  font-size: 21px;
+}
+
+.action-panel label {
+  display: grid;
+  gap: 7px;
+}
+
+.action-panel.instant-buy {
+  border-color: rgba(217, 164, 65, 0.36);
+  background: #25231d;
+}
+
+.action-panel.instant-buy .btn,
+.action-panel > .btn {
+  width: 100%;
+  align-self: end;
+}
+
+.asks-panel,
+.buy-orders-panel {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+
+.buy-orders-panel {
+  border: 1px solid rgba(70, 195, 210, 0.34);
+  border-radius: var(--radius);
+  background: #1d2525;
+}
+
+.asks-list {
+  display: grid;
+  gap: 8px;
+}
+
+.ask-row {
+  min-height: 74px;
+  display: grid;
+  grid-template-columns: minmax(220px, 1.3fr) minmax(120px, 0.7fr) minmax(120px, 0.7fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #191a18;
+}
+
+.buy-order-row {
+  border-color: rgba(70, 195, 210, 0.34);
+  background: #172121;
+}
+
+.ask-row > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.ask-row strong {
+  color: var(--ink);
+}
+
+.ask-row small {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.ask-row .btn {
+  min-width: 96px;
+}
+
+.item-loading,
+.item-empty {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--ink-2);
+}
+
+.item-empty {
+  display: grid;
+  gap: 12px;
+}
+
+@media (max-width: 1120px) {
+  .item-hero,
+  .item-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .item-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .item-summary h2 {
+    font-size: 30px;
+  }
+
+  .item-stats,
+  .ask-row {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+}

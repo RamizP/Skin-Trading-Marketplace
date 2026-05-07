@@ -35,6 +35,7 @@ export type InventoryItem = {
 export type Order = {
   id: number;
   user_id: number;
+  entity_id: number;
   price: number;
   side: "buy" | "sell";
   inventory?: InventoryItem | null;

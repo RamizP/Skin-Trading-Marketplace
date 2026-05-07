@@ -37,3 +37,9 @@ export const formatRarity = (rarity?: string | null) => {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 };
+
+export const getErrorMessage = (error: unknown, fallback = "Something went wrong") => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  return fallback;
+};

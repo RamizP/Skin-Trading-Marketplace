@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { loginUser } from "../api/auth";
+import { getErrorMessage } from "../utils/format";
 import "../styles/Login.css";
 
 type LoginProps = {
@@ -12,114 +13,107 @@ export default function Login({ onLogin }: LoginProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setLoading(true);
     setError("");
 
     try {
       await loginUser(username, password);
-      if (onLogin) {
-        await onLogin();
-      }
+      await onLogin?.();
     } catch (err) {
-      setError(err.message);
+      setError(getErrorMessage(err, "Invalid credentials"));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="login-layout fade-in">
-      <section className="login-hero">
-        <div className="hero-glow" aria-hidden="true"></div>
-        <div className="hero-scan" aria-hidden="true"></div>
+    <main className="login-layout fade-in">
+      <section className="login-market">
         <header className="brandline">
           <div className="brand-mark">TE</div>
           <div>
             <p className="brand-name">Trading Engine</p>
-            <p className="brand-tag">Realtime execution hub</p>
+            <p className="brand-tag">CS-style skin market</p>
           </div>
         </header>
 
-        <h1>Operate the market with clarity.</h1>
-        <p className="hero-copy">
-          A sharp command deck for inventory, orders, and the live entity market.
-          Built for focus, speed, and decisive moves.
-        </p>
-
-        <div className="signal-grid">
-          <div className="signal-card">
-            <span className="signal-label">Open Orders</span>
-            <strong>142</strong>
-            <p>Auto-sorted by spread and velocity.</p>
-          </div>
-          <div className="signal-card">
-            <span className="signal-label">Live Entities</span>
-            <strong>9.4k</strong>
-            <p>Filter by rarity, wear, and pricing gaps.</p>
-          </div>
-          <div className="signal-card">
-            <span className="signal-label">Portfolio Value</span>
-            <strong>$58.3k</strong>
-            <p>Precision balance with instant top-ups.</p>
-          </div>
+        <div className="login-copy">
+          <p className="eyebrow">Market Access</p>
+          <h1>Enter the skin exchange.</h1>
+          <p>
+            Browse listed items, compare floor prices, manage inventory, and trade
+            from one dark market desk.
+          </p>
         </div>
 
-        <div className="ticker">
-          <span>Engine Status</span>
-          <span className="ticker-dot"></span>
-          <span>Stable · 32ms latency · 99.9% uptime</span>
+        <div className="login-showcase" aria-hidden="true">
+          <div className="showcase-item rare">
+            <span>AK</span>
+            <strong>Neon Pattern</strong>
+            <small>$418.90</small>
+          </div>
+          <div className="showcase-item covert">
+            <span>KN</span>
+            <strong>Crimson Edge</strong>
+            <small>$1,240.00</small>
+          </div>
+          <div className="showcase-item restricted">
+            <span>AWP</span>
+            <strong>Arctic Rail</strong>
+            <small>$89.50</small>
+          </div>
         </div>
       </section>
 
       <section className="login-form">
         <div className="form-shell">
           <div className="form-header">
-            <p className="eyebrow">Secure access</p>
+            <p className="eyebrow">Secure Access</p>
             <h2>Sign in</h2>
-            <p className="muted">Enter your credentials to launch the desk.</p>
+            <p className="muted">Use your trading account to open the market.</p>
           </div>
 
           <form onSubmit={handleSubmit}>
             {error && <div className="error">{error}</div>}
 
-            <div className="field">
-              <label htmlFor="username">Username</label>
+            <label className="field" htmlFor="username">
+              <span>Username</span>
               <input
                 id="username"
                 type="text"
                 placeholder="Trader handle"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(event) => setUsername(event.target.value)}
                 required
               />
-            </div>
+            </label>
 
-            <div className="field">
-              <label htmlFor="password">Password</label>
+            <label className="field" htmlFor="password">
+              <span>Password</span>
               <input
                 id="password"
                 type="password"
-                placeholder="••••••••"
+                placeholder="Password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(event) => setPassword(event.target.value)}
                 required
               />
-            </div>
+            </label>
 
             <button type="submit" disabled={loading}>
-              {loading ? "Authenticating..." : "Enter Trading Engine"}
+              {loading ? "Authenticating" : "Open Market"}
             </button>
           </form>
 
           <div className="trust-row">
-            <span>Encrypted sessions</span>
-            <span>Audit-ready logs</span>
-            <span>Role-based access</span>
+            <span>Cookie sessions</span>
+            <span>Role access</span>
+            <span>Live orders</span>
           </div>
         </div>
       </section>
-    </div>
+    </main>
   );
 }
