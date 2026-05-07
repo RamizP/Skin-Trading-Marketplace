@@ -104,6 +104,8 @@ class Block(ABC):
         self.posY = posY
         self.block = block
 
+
+#TODO: fix left right
     def move(self, direction, playground):
         match direction:
             case "l":
@@ -112,8 +114,12 @@ class Block(ABC):
                         can = False
                 if can:
                     for i in range(len(self.block)):
-                        if playground.playground[self.posY+i][self.posX-1] == 1 and self.block[i][0] == 1:
-                            can = False
+                        # if playground.playground[self.posY+i][self.posX-1] == 1 and self.block[i][0] == 1:
+                        if 1 in self.block[i]:
+                            index = self.block[i].index(1)-1
+                            if playground.playground[self.posY+i][self.posX+index] == 1:
+                                can = False
+                                break
                 if can:
                     self.posX -= 1
 
@@ -124,8 +130,19 @@ class Block(ABC):
 
                 if can:
                     for i in range(len(self.block)):
-                        if playground.playground[self.posY+i][self.posX+len(self.block[0])] == 1 and self.block[i][-1] == 1:
-                            can = False
+                        if 1 in self.block[i]:
+                            # if playground.playground[self.posY+i][self.posX+len(self.block[0])] == 1 and self.block[i][-1] == 1:
+                            #Find last matching element index
+                            index=len(self.block[i])
+                            for el in self.block[i][::-1]:
+                                index-=1
+                                if el==1:
+                                    index+=1
+                                    break
+
+                            if playground.playground[self.posY+i][self.posX+index] == 1:
+                                can = False
+                                break
                 if can:
                     self.posX += 1
 
@@ -157,7 +174,7 @@ class Block(ABC):
 
         for y in range(0, len(new_block)):
             for x in range(0, len(new_block[0])):
-                if playground.playground[self.posY+y][self.posX+x]==1:
+                if playground.length<=self.posX+x or self.posX+x<0 or playground.height<=self.posY+y or self.posY+y<0 or playground.playground[self.posY+y][self.posX+x]==1:
                     return False
         if can:
             self.block = new_block
@@ -258,20 +275,45 @@ n = Playground(10, 20)
 n.create()
 color = get_random_color()
 
+import time
+
+
+
+import msvcrt
+
+def getch_non_blocking():
+    if msvcrt.kbhit():          # key available?
+        return msvcrt.getch().decode("utf-8").lower()
+    return None
+import time
+
+last_fall = time.time()
+
 while True:
-    move = input("where: ")
-    if move == "s":
+    key = getch_non_blocking()
+
+    # INPUT
+    if key == 'a':
+        bl.move("l", n)
+    elif key == 'd':
+        bl.move("r", n)
+    elif key == 's':
+        bl.move("d", n)
+    elif key == 'w':
         bl.spin(n)
-        n.render_block(bl)
-    if move == "c":
-        bl = random_block()
-        n.render_block(bl)
-    else:
-        a = bl.move(move, n)
-        if a == False:
+    elif key == 'q':
+        break
+
+    # UPDATE (gravity)
+    if time.time() - last_fall > 0.5:
+        moved = bl.move("d", n)
+        if moved is False:
             n.put_block(bl)
             bl = random_block()
-            color = get_random_color()
-            n.render_block(bl)
-        else:
-            n.render_block(bl)
+        last_fall = time.time()
+
+    # RENDER
+    print("\033[H\033[J", end="")  # clear screen
+    n.render_block(bl)
+
+    time.sleep(0.05)
