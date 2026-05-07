@@ -1,11 +1,8 @@
-from order.models import Base, Order
-from database import SessionLocal, engine
-from sqlalchemy.orm import Session
 from sqlalchemy import func
-from order.models import Base, Order
-from entity.models import Base, Entity
-from inventory.models import Base, UserInventory
-from order.schemas import OrderCreate, OrderDelete, OrderBuy, OrderResponse
+
+from entity.models import Entity
+from inventory.models import UserInventory
+from order.models import Order, Side
 
 class OrderRepository:
 
@@ -28,36 +25,56 @@ class OrderRepository:
         return order
 
     def get_orders_by_id(self, id):
-        order = self.db.query(Order, UserInventory, Entity).join(UserInventory, UserInventory.id == Order.entity_in_inventory_id).join(Entity, Entity.id == UserInventory.entity_id).filter(Order.entity_id == id).order_by(Order.price.asc()).all()
+        order = (
+            self.db.query(Order, UserInventory, Entity)
+            .join(UserInventory, UserInventory.id == Order.entity_in_inventory_id)
+            .join(Entity, Entity.id == UserInventory.entity_id)
+            .filter(Order.entity_id == id, Order.side == Side.SELL)
+            .order_by(Order.price.asc())
+            .all()
+        )
         return order
 
-    def get_all_orders_by_lowest_price(self):
-            lowest_price = func.min(Order.price)
-
-            orders = (
-                self.db.query(Entity, lowest_price)
-                .join(Order, Order.entity_id == Entity.id)
-                .group_by(Entity.id)
-                .all()
+    def get_user_buy_orders_by_entity(self, entity_id, user_id):
+        return (
+            self.db.query(Order)
+            .filter(
+                Order.entity_id == entity_id,
+                Order.user_id == user_id,
+                Order.side == Side.BUY,
             )
+            .order_by(Order.price.desc())
+            .all()
+        )
 
-            return orders
+    def get_all_orders_by_lowest_price(self):
+        lowest_price = func.min(Order.price)
+
+        orders = (
+            self.db.query(Entity, lowest_price)
+            .join(Order, Order.entity_id == Entity.id)
+            .filter(Order.side == Side.SELL)
+            .group_by(Entity.id)
+            .all()
+        )
+
+        return orders
 
     def get_suitable_buy_order(self, user_id, side, entity_id):
-         buy_order = (
-                self.db.query(Order)
-                .with_for_update()
-                .filter(
-                    Order.user_id == user_id,
-                    Order.side == side,
-                    Order.entity_id == entity_id,
-                )
-                .first()
+        buy_order = (
+            self.db.query(Order)
+            .with_for_update()
+            .filter(
+                Order.user_id == user_id,
+                Order.side == side,
+                Order.entity_id == entity_id,
             )
-         return buy_order
+            .first()
+        )
+        return buy_order
 
     def get_user_order(self, entity_id, user_id, side):
-         return (
+        return (
             self.db.query(Order)
             .with_for_update()
             .filter(

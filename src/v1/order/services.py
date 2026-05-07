@@ -134,23 +134,15 @@ class OrderService:
                     .first()
                 )
             elif order_to_delete.side == Side.BUY:
-                item_in_inventory = (
-                    self.db.query(UserInventory)
-                    .with_for_update()
-                    .filter(
-                        UserInventory.entity_id == order_to_delete.entity_id,
-                        UserInventory.user_id == user.id,
-                    )
-                    .first()
-                )
-
-            if not item_in_inventory:
-                raise HTTPException(status_code=404, detail="Inventory item not found.")
+                item_in_inventory = None
+            else:
+                raise HTTPException(status_code=400, detail="Order not valid.")
 
             self.db.delete(order_to_delete)
 
-            item_in_inventory.in_sale = False
-            self.db.add(item_in_inventory)
+            if item_in_inventory:
+                item_in_inventory.in_sale = False
+                self.db.add(item_in_inventory)
             self.uow.commit()
 
         except Exception as e:

@@ -93,6 +93,15 @@ def get_orders_by_entity(entity_id: int, repository: OrderRepository = Depends(g
     return orders_with_entity(orders)
 
 
+@app.get("/buy-orders/{entity_id}/me", response_model=List[OrderResponse])
+def get_my_buy_orders_by_entity(
+    entity_id: int,
+    user: UserResponse = Depends(get_current_user),
+    repository: OrderRepository = Depends(get_order_repository),
+):
+    return repository.get_user_buy_orders_by_entity(entity_id, user.id)
+
+
 @app.post("/orders")
 def create_order(
     order: OrderCreate,
