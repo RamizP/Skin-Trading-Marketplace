@@ -12,7 +12,7 @@ class InventoryService:
         self.inventory_repository: InventoryRepository = repository
 
     def charge(charge_inventory: InventoryCharge, user: UserResponse, db):
-        inventory = InventoryRepository().charge_my_inventory(
+        inventory = InventoryRepository(db).charge_my_inventory(
             charge_inventory, user, db
         )
         if not inventory:

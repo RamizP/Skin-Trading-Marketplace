@@ -18,6 +18,7 @@ class OrderCreate(BaseModel):
 class OrderResponse(BaseModel):
     id: int
     user_id: int
+    entity_id: int
     price: float
     side: Side
     inventory: InventoryResponse | None = None
