@@ -12,6 +12,6 @@ class EntityService:
         if existing_entity:
             raise HTTPException(status_code=400, detail="Entity already exists")
 
-        entity = EntityRepository.create_entity(entity, db)
+        entity = EntityRepository(db).create_entity(entity, db)
         response = JSONResponse(content="success")
         return response

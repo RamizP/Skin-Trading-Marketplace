@@ -20,6 +20,7 @@ from entity.schemas import EntityResponse
 from inventory.schemas import InventoryResponse
 from order.schemas import OrderResponse, OrderCreate, OrderBuy, OrderDelete
 from order.repository import OrderRepository
+from entity.repository import EntityRepository
 
 # Initialize database tables
 Base.metadata.create_all(bind=engine)
@@ -44,24 +45,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def get_user_repository(db: Session = Depends(get_db)) -> OrderRepository:
+def get_user_repository(db: Session = Depends(get_db)) -> AuthRepository:
     return AuthRepository(db)
 
 def get_order_repository(db: Session = Depends(get_db)) -> OrderRepository:
     return OrderRepository(db)
 
+def get_entity_repository(db: Session = Depends(get_db)) -> EntityRepository:
+    return EntityRepository(db)
+
 def get_inventory_repository(db: Session = Depends(get_db)) -> InventoryRepository:
     return InventoryRepository(db)
 
-def get_inventory_service(repository: InventoryRepository = Depends(get_inventory_repository)) -> InventoryRepository:
+def get_inventory_service(repository: InventoryRepository = Depends(get_inventory_repository)) -> InventoryService:
     return InventoryService(repository)
 
-def get_order_service(db: Session = Depends(get_db), order_repository: OrderRepository = Depends(get_order_repository), user_repository: AuthRepository = Depends(get_user_repository), inventory_service: InventoryService = Depends(get_inventory_service)) -> OrderRepository:
-    return OrderService(db, order_repository, user_repository, inventory_service)
+def get_order_service(
+        db: Session = Depends(get_db),
+        order_repository: OrderRepository = Depends(get_order_repository),
+        user_repository: AuthRepository = Depends(get_user_repository),
+        entity_repository: EntityRepository = Depends(get_entity_repository),
+        inventory_service: InventoryService = Depends(get_inventory_service)
+    ) -> OrderService:
+    return OrderService(db, order_repository, user_repository, entity_repository, inventory_service)
 
-# @app.get("/orders")                 Get all Entities with it's lowest price on the market
+# @app.get("/orders")                 Get all Entities that has a sell order in trading market with it's lowest price
 # @app.get("/orders/{entity_id}")     Get all orders for an exact entity but an entity id
-# @app.post("/orders")                Create an order
+# @app.post("/orders")                Create an order (buy or sell)
 # @app.post("/order/buy")             Buy an order
 # @app.delete("/order")               Delete an order
 

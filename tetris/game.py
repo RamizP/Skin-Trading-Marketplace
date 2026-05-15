@@ -305,7 +305,7 @@ while True:
         break
 
     # UPDATE (gravity)
-    if time.time() - last_fall > 0.5:
+    if time.time() - last_fall > 0.3:
         moved = bl.move("d", n)
         if moved is False:
             n.put_block(bl)
@@ -316,4 +316,4 @@ while True:
     print("\033[H\033[J", end="")  # clear screen
     n.render_block(bl)
 
-    time.sleep(0.05)
+    time.sleep(0.03)

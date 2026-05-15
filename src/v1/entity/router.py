@@ -48,7 +48,7 @@ def create_entity(entity: EntityCreate, db: Session = Depends(get_db)):
 
 @app.get("/entities", response_model=List[EntityResponse])
 async def list_entities(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    return EntityRepository.get_all_entities(db, skip, limit)
+    return EntityRepository(db).get_all_entities(skip, limit)
 
 
 @app.get("/entities/{entity_id}", response_model=EntityResponse)
