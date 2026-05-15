@@ -25,6 +25,7 @@ class InventoryRepository:
             raise HTTPException(status_code=400, detail="Not existing entity")
 
         inventory = self.create_inventory(charge_inventory, user)
+        db.add(inventory)
         return inventory
 
     def create_inventory(

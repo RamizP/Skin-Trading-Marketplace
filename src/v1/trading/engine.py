@@ -1,12 +1,12 @@
 from order.schemas import OrderBuy
 from order.models import Order, Side
 
-from auth.schemas import UserResponse
-
 from auth.models import User
-from pydantic import BaseModel
 
 class TradingEngine:
+
+    def __init__(self, order_service):
+        self.order_service = order_service
 
     def find_match(self, order: Order, db):
         if order.side == Side.BUY:
@@ -44,14 +44,14 @@ class TradingEngine:
 
         if matching_order.side == Side.SELL:
             order_buy = OrderBuy(order_id=matching_order.id)
-            self.order_buy(order_buy, user, in_transaction, matched=True)
+            self.order_service.order_buy(order_buy, user, in_transaction, matched=True)
         elif matching_order.side == Side.BUY:
             order_buy = OrderBuy(order_id=order.id)
             buyer_user = (
-                self.db.query(User)
+                db.query(User)
                 .filter(
                     User.id == matching_order.user_id
                 )
                 .first()
             )
-            self.order_buy(order_buy, buyer_user, in_transaction, matched=True)
+            self.order_service.order_buy(order_buy, buyer_user, in_transaction, matched=True)

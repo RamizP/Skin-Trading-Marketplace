@@ -17,33 +17,37 @@ from uow import UnitOfWork, SQLiteUnitOfWork
 from auth.schemas import UserResponse
 
 from trading.engine import TradingEngine
+from entity.repository import EntityRepository
 
 
 class OrderService:
 
-    def __init__(self, db, order_repository, user_repository, inventory_service):
-        self.engine = TradingEngine()
+    def __init__(self, db, order_repository, user_repository, entity_repository, inventory_service):
         self.order_repository: OrderRepository = order_repository
         self.user_repository: AuthRepository = user_repository
+        self.entity_repository: EntityRepository = entity_repository
         self.inventory_service: InventoryService = inventory_service
         self.db = db
         self.uow: UnitOfWork = SQLiteUnitOfWork(self.db)
+        self.engine = TradingEngine(self)
 
     # ----------------------Public Methods----------------------------------
     def create_order(self, order: OrderCreate, user) -> OrderResponse:
         try:
             _validate_order_input(order)
             self.uow.begin()
+            inventory = None
 
-            inventory = self._get_inventory_item_locked(
-                order.entity_in_inventory_id, user.id
-            )
-
-            if order.side == Side.SELL and order.entity_in_inventory_id != 0 and inventory:
+            if order.side == Side.SELL and order.entity_in_inventory_id != 0:
+                inventory = self._get_inventory_item_locked(
+                    order.entity_in_inventory_id, user.id
+                )
+                self.match_entity_to_item(order, inventory)
                 db_post = self._create_sell_order(user, order, inventory)
 
             elif order.side == Side.BUY:
                 self._ensure_no_existing_buy_order(user, order)
+                self.entity_repository.get_entity_by_id(order.entity_id)
                 db_post = self._create_buy_order(order, user)
 
             else:
@@ -164,7 +168,11 @@ class OrderService:
         )
         if user_id:
             query = query.filter(UserInventory.user_id == user_id)
-        return query.first()
+
+        item_from_inventory: UserInventory = query.first()
+        if not item_from_inventory:
+            raise HTTPException(status_code=404, detail="Item not found.")
+        return item_from_inventory
 
     def _create_sell_order(
         self,
@@ -236,3 +244,9 @@ class OrderService:
             )
 
         return order_to_buy
+
+    def match_entity_to_item(self, order: OrderCreate, inventory: UserInventory):
+
+        if inventory.entity_id != order.entity_id:
+            raise HTTPException(status_code=404, detail="Item from inventory and entity did not match.")
+        return True
