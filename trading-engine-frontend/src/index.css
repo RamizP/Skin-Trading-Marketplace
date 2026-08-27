@@ -28,8 +28,13 @@
   --violet: #8758d7;
   --pink: #cf3f84;
   --blue: #4e83df;
-  --shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
-  --radius: 8px;
+  --shadow-sm: 0 2px 8px rgb(0 0 0 / .18);
+  --shadow-md: 0 8px 24px rgb(0 0 0 / .24);
+  --shadow-lg: 0 20px 48px rgb(0 0 0 / .35);
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
 }
 
 *,
@@ -321,6 +326,7 @@ select {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -332,6 +338,7 @@ select {
     opacity: 0;
     transform: translateY(12px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -339,6 +346,7 @@ select {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -350,6 +358,7 @@ select {
 }
 
 @media (max-width: 720px) {
+
   .section-header,
   .market-toolbar {
     grid-template-columns: 1fr;

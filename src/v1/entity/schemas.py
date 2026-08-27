@@ -21,7 +21,7 @@ class EntityCreate(BaseModel):
     symbol: str
     image_url: str | None = None
     entity_rarity: EntityRarity
-    category_id: int | None = None
+    category_id: int
     sub_category_id: int | None = None
 
     class Config:

@@ -3,6 +3,7 @@ from order.models import Order, Side
 
 from auth.models import User
 
+
 class TradingEngine:
 
     def __init__(self, order_service):
@@ -19,20 +20,28 @@ class TradingEngine:
                     Order.entity_id == order.entity_id,
                     Order.user_id != order.user_id,
                 )
+                .order_by(
+                    Order.price.asc(),
+                    Order.created_at.asc(),
+                )
                 .first()
             )
         elif order.side == Side.SELL:
             return (
-                      db.query(Order)
-                      .with_for_update()
-                      .filter(
-                          Order.side == Side.BUY,
-                          Order.price >= order.price,
-                          Order.entity_id == order.entity_id,
-                          Order.user_id != order.user_id,
-                      )
-                      .first()
-                  )
+                db.query(Order)
+                .with_for_update()
+                .filter(
+                    Order.side == Side.BUY,
+                    Order.price >= order.price,
+                    Order.entity_id == order.entity_id,
+                    Order.user_id != order.user_id,
+                )
+                .order_by(
+                    Order.price.desc(),
+                    Order.created_at.asc(),
+                )
+                .first()
+            )
         return None
 
     def execute_match(self, db, order, user, in_transaction):
@@ -48,10 +57,8 @@ class TradingEngine:
         elif matching_order.side == Side.BUY:
             order_buy = OrderBuy(order_id=order.id)
             buyer_user = (
-                db.query(User)
-                .filter(
-                    User.id == matching_order.user_id
-                )
-                .first()
+                db.query(User).filter(User.id == matching_order.user_id).first()
             )
-            self.order_service.order_buy(order_buy, buyer_user, in_transaction, matched=True)
+            self.order_service.order_buy(
+                order_buy, buyer_user, in_transaction, matched=True
+            )
