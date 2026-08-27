@@ -40,6 +40,10 @@ class EntityRepository:
     def category_validate(self, category_id: int, sub_category_id: int):
         if (category_id != None and not self.db.query(Category).filter(Category.id == category_id).first()):
             return False
+
+        if sub_category_id is None:
+            return True
+
         if (sub_category_id != None and not self.db.query(SubCategory).filter(SubCategory.id == sub_category_id).first()):
             return False
 
