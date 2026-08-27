@@ -22,3 +22,13 @@ class InventoryService:
 
     def create_inventory_item(self, item, user):
         return self.inventory_repository.create_inventory_item(item, user)
+
+    def get_inventory_item_locked(
+        self, inventory_id: int, user_id: int = None
+    ):
+        # lock the Inventory
+        item_from_inventory: UserInventory = self.inventory_repository.lock_inventory_by_id(inventory_id, user_id)
+
+        if not item_from_inventory:
+            raise HTTPException(status_code=404, detail="Item not found.")
+        return item_from_inventory

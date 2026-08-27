@@ -1,24 +1,17 @@
 from typing import List
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 from Dependencies import get_current_user
 from database import engine, get_db, Base
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends, HTTPException
 
 from order.services import OrderService
-
-from order.models import Order
-from entity.models import Entity
-from inventory.models import UserInventory
 from inventory.repository import InventoryRepository
 from inventory.services import InventoryService
 
 from auth.schemas import UserResponse
 from auth.repository import AuthRepository
-from entity.schemas import EntityResponse
-from inventory.schemas import InventoryResponse
-from order.schemas import OrderResponse, OrderCreate, OrderBuy, OrderDelete
+from order.schemas import OrderResponse, OrderCreate, OrderBuy, OrderDelete, orders_with_entity
 from order.repository import OrderRepository
 from entity.repository import EntityRepository
 
@@ -27,7 +20,7 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="My API",
-    description="This is a custom API using OpenAPI with FastAPI",
+    description="OrderService",
     version="1.0.0",
     openapi_url="/custom_openapi.json",
 )
@@ -69,14 +62,14 @@ def get_order_service(
     ) -> OrderService:
     return OrderService(db, order_repository, user_repository, entity_repository, inventory_service)
 
-# @app.get("/orders")                 Get all Entities that has a sell order in trading market with it's lowest price
-# @app.get("/orders/{entity_id}")     Get all orders for an exact entity but an entity id
-# @app.post("/orders")                Create an order (buy or sell)
-# @app.post("/order/buy")             Buy an order
-# @app.delete("/order")               Delete an order
+# /orders               Get all Entities that has a sell order in trading market with it's lowest price
+# orders/{entity_id}    Get all orders for an exact entity but an entity id
+# /orders               Create an order (buy or sell)
+# /order/buy            Buy an order
+# /order                Delete an order
 
 @app.get("/orders")
-def get_orders(
+def get_entities_having_sell_order(
     repository: OrderRepository = Depends(get_order_repository),
 ):
     orders = repository.get_all_orders_by_lowest_price()
@@ -137,22 +130,3 @@ def order_delete(
     order_service: OrderService = Depends(get_order_service),
 ):
     return order_service.order_delete(order_delete, user)
-
-
-def orders_with_entity(orders: List[Order]) -> List[OrderResponse]:
-    return [
-        OrderResponse(
-            **ord.__dict__,
-            inventory=InventoryResponse(
-                id=inv.id,
-                user_id=inv.user_id,
-                entity_id=inv.entity_id,
-                entity_wear=inv.entity_wear,
-                entity=EntityResponse.model_validate(
-                    ent
-                ),
-                in_sale=inv.in_sale,
-            )
-        )
-        for ord, inv, ent in orders
-    ]

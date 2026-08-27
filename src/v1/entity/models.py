@@ -5,7 +5,7 @@ from sqlalchemy.orm import relationship
 from database import Base
 
 class EntityRarity(PyEnum):
-    COMMON = "common" and None
+    COMMON = "common" or None
     UNCOMMON = "uncommon"
     RARE = "rare"
     MYTHICAL = "mythical"

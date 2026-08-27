@@ -1,21 +1,17 @@
 from fastapi.responses import JSONResponse
 from auth.strategy.AuthStrategyInterface import AuthStrategyInterface
-from sqlalchemy.orm import Session
 import jwt
 from jwt import ExpiredSignatureError, InvalidTokenError
 from auth.models import Base, User
-import Exceptions
 from auth.utils import AuthUtils
 
 from dotenv import load_dotenv
 from fastapi import HTTPException, Request
-import jwt
 from datetime import datetime, timedelta
 from auth.schemas import JwtData, UserResponse
-from auth.models import Base, User
-from auth.utils import AuthUtils
 from auth.repository import AuthRepository
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 import Exceptions
 
 
@@ -23,23 +19,12 @@ class JWTAuthStrategy(AuthStrategyInterface):
     """Strategy for JWT-based authentication."""
 
     def __init__(self, secret_key: str, algorithm: str = "HS256", token_duration: int = 600):
-        """
-        Initialize the JWT authentication strategy with a secret key and algorithm.
 
-        :param secret_key: The secret key used for signing JWT tokens.
-        :param algorithm: The algorithm used for signing JWT tokens (default is HS256).
-        """
         self._secret_key = secret_key
         self._algorithm = algorithm
         self.token_duration = token_duration
 
     def login(self, user_data, db):
-        """
-        Authenticate the user based on the JWT token in the request.
-
-        :param request: The request object containing the JWT token.
-        :return: User object if authentication is successful, otherwise None.
-        """
         existing_user = (
             db.query(User).filter(User.username == user_data.username).first()
         )
@@ -57,20 +42,14 @@ class JWTAuthStrategy(AuthStrategyInterface):
             httponly=True,
             secure=True,          # REQUIRED for HTTPS
             samesite="none",      # REQUIRED for cross-origin
-            max_age=60 * 60 * 24, # 1 day (seconds)
+            max_age=60 * 60 * 24, # equal to 1 day
         )
         return response
 
     def register(self, user_data, db):
-        """
-        Register a new user with the provided user data.
-
-        :param user_data: Data required for user registration.
-        :return: User object if registration is successful, otherwise raises an exception.
-        """
-        existing_user = db.query(User).filter(User.username == user_data.username).first()
+        existing_user = db.query(User).filter(or_(User.username == user_data.username, User.email == user_data.email)).first()
         if existing_user:
-            raise HTTPException(status_code=400, detail="Username already exists")
+            raise HTTPException(status_code=400, detail="Something went wrong")
 
         created_user = AuthRepository(db).create_user(user_data)
         token = self.create_token(created_user.id)
@@ -87,32 +66,15 @@ class JWTAuthStrategy(AuthStrategyInterface):
         return response
 
     def logout(self) -> JSONResponse:
-        """
-        Log out the user by clearing the authentication token.
-
-        :param request: The request object containing the JWT token.
-        :return: Response indicating successful logout.
-        """
         response = JSONResponse(content={"message": "Logout successful"})
         response.delete_cookie("Authentication")
         return response
 
     def get_user(self, user_data, db):
-        """
-        Retrieve a user by their ID.
-
-        :param user_id: The ID of the user to retrieve.
-        :return: User object if found, otherwise None.
-        """
         # Implementation for retrieving a user
         pass
 
     def create_token(self, user_id) -> str:
-        """
-        Create a JWT token for the user.
-        :param user_id: ID of the user for whom the token is created.
-        :return: JWT token as a string.
-        """
         if not user_id:
             raise HTTPException(status_code=400, detail="User ID is required")
 
@@ -122,12 +84,6 @@ class JWTAuthStrategy(AuthStrategyInterface):
         return token
 
     def validate_jwt(self, token: str) -> JwtData:
-        """
-        Validate the JWT token and return the decoded data.
-        :param token: JWT token to validate.
-        :return: JwtData object containing the decoded token data.
-        :raises HTTPException: If the token is invalid or expired.
-        """
         if not token:
             raise HTTPException(status_code=401, detail="Token is missing")
 
@@ -143,12 +99,6 @@ class JWTAuthStrategy(AuthStrategyInterface):
             raise HTTPException(status_code=401, detail="Invalid token")
 
     def current_user(self, token: str, db: Session) -> UserResponse:
-        """
-        Retrieve the current user based on the JWT token.
-        :param token: JWT token from the request.
-        :param db: Database session.
-        :return: UserResponse object containing user details.
-        """
         if not token:
             raise HTTPException(status_code=401, detail="Token is missing")
         if not isinstance(token, str):

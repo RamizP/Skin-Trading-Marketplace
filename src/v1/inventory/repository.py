@@ -26,6 +26,7 @@ class InventoryRepository:
 
         inventory = self.create_inventory(charge_inventory, user)
         db.add(inventory)
+        db.commit()
         return inventory
 
     def create_inventory(
@@ -47,3 +48,14 @@ class InventoryRepository:
             entity_wear=inventory_item.entity_wear
         )
         return db_post
+
+    def lock_inventory_by_id(self, inventory_id: int, user_id: int | None = None):
+        query = (
+            self.db.query(UserInventory)
+            .with_for_update()
+            .filter(UserInventory.id == inventory_id)
+        )
+        if user_id:
+            query = query.filter(UserInventory.user_id == user_id)
+
+        return query.first()

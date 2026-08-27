@@ -1,5 +1,4 @@
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
 
 from sqlalchemy import update
 from auth.models import User
@@ -15,6 +14,8 @@ from inventory.services import InventoryService
 from uow import UnitOfWork, SQLiteUnitOfWork
 
 from auth.schemas import UserResponse
+from inventory.schemas import InventoryResponse
+from entity.schemas import EntityResponse
 
 from trading.engine import TradingEngine
 from entity.repository import EntityRepository
@@ -22,7 +23,14 @@ from entity.repository import EntityRepository
 
 class OrderService:
 
-    def __init__(self, db, order_repository, user_repository, entity_repository, inventory_service):
+    def __init__(
+        self,
+        db,
+        order_repository,
+        user_repository,
+        entity_repository,
+        inventory_service,
+    ):
         self.order_repository: OrderRepository = order_repository
         self.user_repository: AuthRepository = user_repository
         self.entity_repository: EntityRepository = entity_repository
@@ -39,7 +47,7 @@ class OrderService:
             inventory = None
 
             if order.side == Side.SELL and order.entity_in_inventory_id != 0:
-                inventory = self._get_inventory_item_locked(
+                inventory = self.inventory_service.get_inventory_item_locked(
                     order.entity_in_inventory_id, user.id
                 )
                 self.match_entity_to_item(order, inventory)
@@ -55,9 +63,6 @@ class OrderService:
 
             self.db.add(db_post)
 
-            if inventory:
-                self.db.add(inventory)
-
             self.db.flush()
             self.engine.execute_match(self.db, db_post, user, in_transaction=True)
 
@@ -68,21 +73,20 @@ class OrderService:
 
         return OrderResponse.model_validate(db_post)
 
-    def order_buy(self, order_buy: OrderBuy, user, in_transaction, matched = False) -> OrderResponse:
+    def order_buy(
+        self, order_buy: OrderBuy, user, in_transaction, matched=False
+    ) -> OrderResponse:
 
         try:
-            if in_transaction==False:
+            if in_transaction == False:
                 self.uow.begin()
 
             order_to_buy: Order = self._get_order_to_buy(order_buy, user)
 
             if order_to_buy.side == Side.BUY:
-                raise HTTPException(
-                    status_code=404, detail="Can't buy this Order."
-                )
+                raise HTTPException(status_code=404, detail="Can't buy this Order.")
 
-
-            item_in_inventory = self._get_inventory_item_locked(
+            item_in_inventory = self.inventory_service.get_inventory_item_locked(
                 order_to_buy.entity_in_inventory_id
             )
 
@@ -90,7 +94,11 @@ class OrderService:
 
             # Adding the Item to buyer inventory after a successful purchase
             # new_inventory_item = self.inventory_service.create_inventory_item(item_in_inventory, user)
-            self.db.execute(update(UserInventory).where(UserInventory.id==item_in_inventory.id).values(user_id=user.id, in_sale=False))
+            self.db.execute(
+                update(UserInventory)
+                .where(UserInventory.id == item_in_inventory.id)
+                .values(user_id=user.id, in_sale=False)
+            )
             self.db.flush()
 
             # Deleting the order from Marketplace, and sellers inventory
@@ -100,27 +108,30 @@ class OrderService:
             # IF two orders matched, means there is also BUY order in Orders Table. So we should delete it.
             # So if user BUYS manually, we dont delete his BUY order too
             if matched:
-                buy_request = self.order_repository.get_suitable_buy_order(user.id, Side.BUY, item_in_inventory.entity_id)
+                buy_request = self.order_repository.get_suitable_buy_order(
+                    user.id, Side.BUY, item_in_inventory.entity_id
+                )
 
                 if buy_request:
                     self.db.delete(buy_request)
 
             # Committing the whole transaction
-            if in_transaction==False:
+            if in_transaction == False:
                 self.uow.commit()
 
             return OrderResponse.model_validate(order_to_buy)
         except Exception as e:
-            if in_transaction==False:
+            if in_transaction == False:
                 self.uow.rollback()
             raise
 
-##TODO: not entity_id, but inventory_entity_id
     def order_delete(self, order_delete: OrderDelete, user) -> OrderResponse:
 
         try:
             self.uow.begin()
-            order_to_delete: Order = self.order_repository.get_order_by_id(order_delete.order_id)
+            order_to_delete: Order = self.order_repository.get_order_by_id(
+                order_delete.order_id
+            )
 
             if not order_to_delete or order_to_delete.user_id != user.id:
                 raise HTTPException(
@@ -128,14 +139,8 @@ class OrderService:
                 )
 
             if order_to_delete.side == Side.SELL:
-                item_in_inventory = (
-                    self.db.query(UserInventory)
-                    .with_for_update()
-                    .filter(
-                        UserInventory.id == order_to_delete.entity_in_inventory_id,
-                        UserInventory.user_id == user.id,
-                    )
-                    .first()
+                item_in_inventory = self.inventory_service.get_inventory_item_locked(
+                    order_to_delete.entity_in_inventory_id, user.id
                 )
             elif order_to_delete.side == Side.BUY:
                 item_in_inventory = None
@@ -146,7 +151,6 @@ class OrderService:
 
             if item_in_inventory:
                 item_in_inventory.in_sale = False
-                self.db.add(item_in_inventory)
             self.uow.commit()
 
         except Exception as e:
@@ -157,34 +161,12 @@ class OrderService:
 
     # ----------------------Private Helpers----------------------------------
 
-    def _get_inventory_item_locked(
-        self, inventory_id: int, user_id: int = None
-    ):
-        # lock the Inventory
-        query = (
-            self.db.query(UserInventory)
-            .with_for_update()
-            .filter(UserInventory.id == inventory_id)
-        )
-        if user_id:
-            query = query.filter(UserInventory.user_id == user_id)
-
-        item_from_inventory: UserInventory = query.first()
-        if not item_from_inventory:
-            raise HTTPException(status_code=404, detail="Item not found.")
-        return item_from_inventory
-
     def _create_sell_order(
         self,
         user: UserResponse,
         order: OrderCreate,
         inventory: UserInventory,
     ):
-
-        # lock the Order
-        self.db.query(Order).with_for_update().filter(
-            Order.entity_in_inventory_id == order.entity_in_inventory_id
-        ).all()
 
         if inventory.in_sale:
             raise HTTPException(status_code=404, detail="Item not found in inventory.")
@@ -210,7 +192,9 @@ class OrderService:
         )
 
     def _ensure_no_existing_buy_order(self, user, order):
-        user_order = self.order_repository.get_user_order(order.entity_id, user.id, Side.BUY)
+        user_order = self.order_repository.get_user_order(
+            order.entity_id, user.id, Side.BUY
+        )
         if user_order:
             raise HTTPException(
                 status_code=400,
@@ -248,5 +232,7 @@ class OrderService:
     def match_entity_to_item(self, order: OrderCreate, inventory: UserInventory):
 
         if inventory.entity_id != order.entity_id:
-            raise HTTPException(status_code=404, detail="Item from inventory and entity did not match.")
+            raise HTTPException(
+                status_code=404, detail="Item from inventory and entity did not match."
+            )
         return True

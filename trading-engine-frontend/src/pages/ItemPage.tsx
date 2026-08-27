@@ -132,6 +132,7 @@ export default function ItemPage({
       await createOrder({
         side: "sell",
         price,
+        entity_id: selectedInventory.entity_id,
         entity_in_inventory_id: selectedInventory.id,
       });
       setSellPrice("");

@@ -8,28 +8,17 @@ class OrderRepository:
 
     def __init__(self, db):
         self.db = db
-    # def create_order(order: OrderCreate, db: Session):
-    #     db_post = Order(
-    #         name=order.name,
-    #         symbol=order.symbol,
-    #         image_url=order.image_url
-    #     )
 
-    #     db.add(db_post)
-    #     db.commit()
-    #     db.refresh(db_post)
-
-    #     return db_post
-    def get_order_by_id(self, id):
-        order: Order = self.db.query(Order).with_for_update().filter(Order.id == id).first()
+    def get_order_by_id(self, order_id):
+        order: Order = self.db.query(Order).with_for_update().filter(Order.id == order_id).first()
         return order
 
-    def get_orders_by_id(self, id):
+    def get_orders_by_id(self, order_id):
         order = (
             self.db.query(Order, UserInventory, Entity)
             .join(UserInventory, UserInventory.id == Order.entity_in_inventory_id)
             .join(Entity, Entity.id == UserInventory.entity_id)
-            .filter(Order.entity_id == id, Order.side == Side.SELL)
+            .filter(Order.entity_id == order_id, Order.side == Side.SELL)
             .order_by(Order.price.asc())
             .all()
         )

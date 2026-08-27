@@ -38,13 +38,6 @@ def get_my_inventory(
 ):
     """
     Get current user inventory.
-
-    Args:
-        user (UserResponse): Current user.
-        db (Session): Database.
-
-    Returns:
-        List[InventoryResponse]: Users Inventory.
     """
 
     inventory_entities = (
@@ -58,6 +51,7 @@ def get_my_inventory(
 
     return inventory_with_entity(inventory_entities)
 
+
 @app.post("/inventory/me/charge", response_model=List[InventoryResponse])
 def charge_my_inventory(
     charge_inventory: InventoryCharge,
@@ -66,14 +60,6 @@ def charge_my_inventory(
 ):
     """
     Add a skin to the current user inventory.
-
-    Args:
-        charge_inventory (InventoryCharge): Schema.
-        user (UserResponse): Current user.
-        db (Session): Database.
-
-    Returns:
-        List[InventoryResponse]: Users Inventory.
     """
 
     inventory = InventoryService.charge(charge_inventory, user, db)
