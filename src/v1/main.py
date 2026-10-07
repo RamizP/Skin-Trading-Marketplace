@@ -1,4 +1,3 @@
-# main.py
 import uvicorn
 from fastapi import APIRouter, FastAPI
 
@@ -7,9 +6,6 @@ from entity.router import app as entity_router
 from inventory.router import app as inventory_router
 from order.router import app as order_router
 
-from fastapi.middleware.cors import CORSMiddleware
-
-from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Trading Engine")

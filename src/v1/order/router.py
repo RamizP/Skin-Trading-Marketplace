@@ -106,13 +106,14 @@ def get_my_buy_orders_by_entity(
 
 
 @app.get("/buy-orders/{entity_id}/highest", response_model=OrderResponse)
-def get_my_buy_orders_by_entity(
+def get_highest_buy_order_by_entity(
     entity_id: int,
     repository: OrderRepository = Depends(get_order_repository),
 ):
-    if not repository.get_highest_buy_orders_by_entity(entity_id):
+    order = repository.get_highest_buy_orders_by_entity(entity_id)
+    if not order:
         raise HTTPException(status_code=404, detail="No orders found for this entity.")
-    return repository.get_highest_buy_orders_by_entity(entity_id)
+    return order
 
 
 @app.post("/orders")

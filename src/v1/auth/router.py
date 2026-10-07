@@ -24,6 +24,18 @@ app = FastAPI(
 
 # api_key_header = APIKeyHeader(name="Authentication")
 
+origins = [
+    "*"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],  # or list your actual methods
+    allow_headers=["*"],
+)
+
 @app.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
     return AuthService().register(user, db)

@@ -6,8 +6,8 @@ import {
   buyOrder,
   createOrder,
   deleteOrder,
-  getMyBuyOrdersByEntity,
   getHighestBuyOrdersByEntity,
+  getMyBuyOrdersByEntity,
   getOrdersByEntity,
 } from "../api/orders";
 import type { Entity, InventoryItem, Order, User } from "../api/types";
@@ -410,35 +410,27 @@ export default function ItemPage({
           </div>
           <div className="pill">{myBuyOrders.length} bids</div>
         </div>
-          Highest Bid
-          {highestBuyOrder !== null &&
-            <div className="ask-row buy-order-row" key={highestBuyOrder.id}>
-              <div>
-                <strong>{entity.name}</strong>
-                <small>Buy order #{highestBuyOrder.id}</small>
-              </div>
-              <div>
-                <span>Side</span>
-                <strong>Buy</strong>
-              </div>
-              <div>
-                <span>Bid</span>
-                <strong>{formatCurrency(highestBuyOrder.price)}</strong>
-              </div>
-              <button
-                className="btn btn-outline"
-                type="button"
-                disabled={pendingOrderId === highestBuyOrder.id}
-                onClick={() => handleCancelOrder(highestBuyOrder.id)}
-              >
-                {pendingOrderId === highestBuyOrder.id ? "Cancelling" : "Cancel"}
-              </button>
+        <p className="eyebrow">Highest Bid</p>
+        {highestBuyOrder !== null && (
+          <div className="ask-row buy-order-row" key={highestBuyOrder.id}>
+            <div>
+              <strong>{entity.name}</strong>
+              <small>Buy order #{highestBuyOrder.id}</small>
             </div>
-          }
+            <div>
+              <span>Side</span>
+              <strong>Buy</strong>
+            </div>
+            <div>
+              <span>Bid</span>
+              <strong>{formatCurrency(highestBuyOrder.price)}</strong>
+            </div>
+          </div>
+        )}
 
-        Your Bid
+        <p className="eyebrow">Your Bids</p>
         <div className="asks-list">
-          {highestBuyOrder === null && <p className="helper">No open buy orders for this item.</p>}
+          {myBuyOrders.length === 0 && <p className="helper">No open buy orders for this item.</p>}
           {myBuyOrders.map((order) => (
             <div className="ask-row buy-order-row" key={order.id}>
               <div>
