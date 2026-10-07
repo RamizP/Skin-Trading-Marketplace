@@ -7,6 +7,7 @@ import {
   createOrder,
   deleteOrder,
   getMyBuyOrdersByEntity,
+  getHighestBuyOrdersByEntity,
   getOrdersByEntity,
 } from "../api/orders";
 import type { Entity, InventoryItem, Order, User } from "../api/types";
@@ -40,6 +41,7 @@ export default function ItemPage({
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [myBuyOrders, setMyBuyOrders] = useState<Order[]>([]);
+  const [highestBuyOrder, setHighestBuyOrder] = useState<Order | null>(null);
   const [selectedInventoryId, setSelectedInventoryId] = useState<number | "">(
     inventoryItemId ?? "",
   );
@@ -72,7 +74,7 @@ export default function ItemPage({
     setLoading(true);
     setStatus(null);
     try {
-      const [entityData, inventoryData, orderData, buyOrderData] = await Promise.all([
+      const [entityData, inventoryData, orderData, buyOrderData, highestOrderData] = await Promise.all([
         getEntity(entityId),
         getInventory().catch(() => []),
         getOrdersByEntity(entityId).catch((err) => {
@@ -85,11 +87,17 @@ export default function ItemPage({
           if (message.toLowerCase().includes("no orders")) return [];
           throw err;
         }),
+        getHighestBuyOrdersByEntity(entityId).catch((err) => {
+          const message = getErrorMessage(err, "");
+          if (message.toLowerCase().includes("no orders")) return null;
+          throw err;
+        }),
       ]);
       setEntity(entityData);
       setInventory(inventoryData);
       setOrders(orderData);
       setMyBuyOrders(buyOrderData);
+      setHighestBuyOrder(highestOrderData);
       const preferredCopy = inventoryData.find((item) => item.id === inventoryItemId);
       const firstSellable = inventoryData.find(
         (item) => item.entity_id === entityId && !item.in_sale,
@@ -396,15 +404,41 @@ export default function ItemPage({
       <div className="buy-orders-panel">
         <div className="section-header">
           <div>
-            <p className="eyebrow">Your Buy Orders</p>
+            <p className="eyebrow">Buy Orders</p>
             <h2>Open Bids</h2>
             <p className="muted">Cancel bids that have not matched a seller yet.</p>
           </div>
           <div className="pill">{myBuyOrders.length} bids</div>
         </div>
+          Highest Bid
+          {highestBuyOrder !== null &&
+            <div className="ask-row buy-order-row" key={highestBuyOrder.id}>
+              <div>
+                <strong>{entity.name}</strong>
+                <small>Buy order #{highestBuyOrder.id}</small>
+              </div>
+              <div>
+                <span>Side</span>
+                <strong>Buy</strong>
+              </div>
+              <div>
+                <span>Bid</span>
+                <strong>{formatCurrency(highestBuyOrder.price)}</strong>
+              </div>
+              <button
+                className="btn btn-outline"
+                type="button"
+                disabled={pendingOrderId === highestBuyOrder.id}
+                onClick={() => handleCancelOrder(highestBuyOrder.id)}
+              >
+                {pendingOrderId === highestBuyOrder.id ? "Cancelling" : "Cancel"}
+              </button>
+            </div>
+          }
 
+        Your Bid
         <div className="asks-list">
-          {myBuyOrders.length === 0 && <p className="helper">No open buy orders for this item.</p>}
+          {highestBuyOrder === null && <p className="helper">No open buy orders for this item.</p>}
           {myBuyOrders.map((order) => (
             <div className="ask-row buy-order-row" key={order.id}>
               <div>

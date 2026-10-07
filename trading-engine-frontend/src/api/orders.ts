@@ -27,6 +27,17 @@ export async function getMyBuyOrdersByEntity(entityId: number): Promise<Order[]>
   return res.json() as Promise<Order[]>;
 }
 
+export async function getHighestBuyOrdersByEntity(entityId: number): Promise<Order> {
+  const res = await fetch(`${API_URL}/buy-orders/${entityId}/highest`, {
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const err = (await res.json()) as ApiError;
+    throw new Error(err.detail || "Failed to fetch buy orders");
+  }
+  return res.json() as Promise<Order>;
+}
+
 export async function createOrder(payload: {
   price: number;
   side: "buy" | "sell";
