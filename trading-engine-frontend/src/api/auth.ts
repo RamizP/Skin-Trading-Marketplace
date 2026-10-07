@@ -64,3 +64,34 @@ export async function chargeBalance(amount: number): Promise<User> {
 
   return data;
 }
+
+export async function registerUser(
+  username: string,
+  email: string,
+  password: string,
+  bio?: string,
+  location?: string,
+) {
+  const response = await fetch(`${API_URL}/register`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({
+      username,
+      email,
+      password,
+      bio: bio || undefined,
+      location: location || undefined,
+    }),
+  });
+
+  const data = (await response.json()) as ApiError;
+
+  if (!response.ok) {
+    throw new Error(data.detail || "Could not create your account");
+  }
+
+  return data;
+}

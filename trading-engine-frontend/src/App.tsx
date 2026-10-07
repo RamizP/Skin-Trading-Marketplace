@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import { getMe } from "./api/auth";
 import type { User } from "./api/types";
@@ -7,6 +8,7 @@ import type { User } from "./api/types";
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showRegister, setShowRegister] = useState(false);
 
   const refreshUser = async () => {
     try {
@@ -29,7 +31,13 @@ export default function App() {
   };
 
   if (loading) return <div className="app-loading fade-in">Loading Trading Engine...</div>;
-  if (!user) return <Login onLogin={handleLogin} />;
+  if (!user) {
+    return showRegister ? (
+      <Register onRegistered={handleLogin} onLogin={() => setShowRegister(false)} />
+    ) : (
+      <Login onLogin={handleLogin} onRegister={() => setShowRegister(true)} />
+    );
+  }
 
   return <Dashboard user={user} onLogout={handleLogout} onUserUpdate={setUser} />;
 }

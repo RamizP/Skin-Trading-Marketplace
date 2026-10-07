@@ -5,9 +5,10 @@ import "../styles/Login.css";
 
 type LoginProps = {
   onLogin?: () => void | Promise<void>;
+  onRegister?: () => void;
 };
 
-export default function Login({ onLogin }: LoginProps) {
+export default function Login({ onLogin, onRegister }: LoginProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -112,6 +113,13 @@ export default function Login({ onLogin }: LoginProps) {
             <span>Role access</span>
             <span>Live orders</span>
           </div>
+
+          <p className="form-switch">
+            New to the exchange?{" "}
+            <button type="button" className="text-button" onClick={onRegister}>
+              Create an account
+            </button>
+          </p>
         </div>
       </section>
     </main>
