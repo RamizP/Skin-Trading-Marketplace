@@ -4,13 +4,16 @@ from entity.models import Entity
 from inventory.models import UserInventory
 from order.models import Order, Side
 
+
 class OrderRepository:
 
     def __init__(self, db):
         self.db = db
 
     def get_order_by_id(self, order_id):
-        order: Order = self.db.query(Order).with_for_update().filter(Order.id == order_id).first()
+        order: Order = (
+            self.db.query(Order).with_for_update().filter(Order.id == order_id).first()
+        )
         return order
 
     def get_orders_by_id(self, order_id):
@@ -34,6 +37,17 @@ class OrderRepository:
             )
             .order_by(Order.price.desc())
             .all()
+        )
+
+    def get_highest_buy_orders_by_entity(self, entity_id):
+        return (
+            self.db.query(Order)
+            .filter(
+                Order.entity_id == entity_id,
+                Order.side == Side.BUY,
+            )
+            .order_by(Order.price.desc())
+            .first()
         )
 
     def get_all_orders_by_lowest_price(self):

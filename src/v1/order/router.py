@@ -63,7 +63,7 @@ def get_order_service(
     return OrderService(db, order_repository, user_repository, entity_repository, inventory_service)
 
 # /orders               Get all Entities that has a sell order in trading market with it's lowest price
-# orders/{entity_id}    Get all orders for an exact entity but an entity id
+# /orders/{entity_id}   Get all orders for an exact entity but an entity id
 # /orders               Create an order (buy or sell)
 # /order/buy            Buy an order
 # /order                Delete an order
@@ -103,6 +103,16 @@ def get_my_buy_orders_by_entity(
     repository: OrderRepository = Depends(get_order_repository),
 ):
     return repository.get_user_buy_orders_by_entity(entity_id, user.id)
+
+
+@app.get("/buy-orders/{entity_id}/highest", response_model=OrderResponse)
+def get_my_buy_orders_by_entity(
+    entity_id: int,
+    repository: OrderRepository = Depends(get_order_repository),
+):
+    if not repository.get_highest_buy_orders_by_entity(entity_id):
+        raise HTTPException(status_code=404, detail="No orders found for this entity.")
+    return repository.get_highest_buy_orders_by_entity(entity_id)
 
 
 @app.post("/orders")
