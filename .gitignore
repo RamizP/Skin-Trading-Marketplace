@@ -1,3 +1,32 @@
-*.pyc
-*.env
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+venv/
+.venv/
+env/
+
+# Logs
+*.log
+logs/
+
+# Local databases and runtime files
+*.db
+*.sqlite
+*.sqlite3
+
+# Certificates and private keys
 *.pem
+*.key
+
+# Frontend dependencies and build output
+trading-engine-frontend/node_modules/
+trading-engine-frontend/dist/
