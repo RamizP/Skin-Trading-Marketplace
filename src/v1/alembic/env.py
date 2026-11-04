@@ -23,6 +23,7 @@ from auth.models import User
 from entity.models import Entity
 from inventory.models import UserInventory
 from order.models import Order
+from case.models import CaseDrop
 target_metadata = Base.metadata
 print("Tables in metadata:", target_metadata.tables.keys())
 

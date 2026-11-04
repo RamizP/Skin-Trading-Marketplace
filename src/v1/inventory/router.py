@@ -63,6 +63,7 @@ def charge_my_inventory(
     """
 
     inventory = InventoryService.charge(charge_inventory, user, db)
+    db.commit()
     inventory_entities = (
         db.query(UserInventory, Entity)
         .join(Entity, UserInventory.entity_id == Entity.id)

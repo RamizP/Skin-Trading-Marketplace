@@ -61,6 +61,9 @@ def get_entity_by_id(entity_id: int, db: Session = Depends(get_db)):
 
 @app.post("/category", dependencies=[Depends(is_admin)])
 def create_category(category: CategoryCreate, db: Session = Depends(get_db)):
+    existing_category = db.query(Category).filter(Category.name == category.name).first()
+    if existing_category:
+        raise HTTPException(status_code=400, detail="Category exists")
     db_post = Category(name=category.name)
 
     db.add(db_post)
@@ -72,6 +75,9 @@ def create_category(category: CategoryCreate, db: Session = Depends(get_db)):
 
 @app.post("/sub-category", dependencies=[Depends(is_admin)])
 def create_sub_category(sub_category: SubCategoryCreate, db: Session = Depends(get_db)):
+    existing_sub_category = db.query(SubCategory).filter(SubCategory.name == sub_category.name).first()
+    if existing_sub_category:
+        raise HTTPException(status_code=400, detail="SubCategory exists")
     db_post = SubCategory(name=sub_category.name, category_id=sub_category.category_id)
 
     db.add(db_post)

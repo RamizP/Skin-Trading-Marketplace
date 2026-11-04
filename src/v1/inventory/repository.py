@@ -26,7 +26,7 @@ class InventoryRepository:
 
         inventory = self.create_inventory(charge_inventory, user)
         db.add(inventory)
-        db.commit()
+        db.flush()
         return inventory
 
     def create_inventory(
