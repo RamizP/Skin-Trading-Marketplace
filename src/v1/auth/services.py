@@ -10,8 +10,9 @@ import Exceptions
 from auth.schemas import UserResponse
 from auth.strategy.AuthStrategy import JWTAuthStrategy, TYPO3AuthStrategy
 from auth.strategy import AuthStrategyInterface
+from pathlib import Path
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 
 class AuthService:
