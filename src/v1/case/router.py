@@ -1,11 +1,4 @@
-# /case/open
-# /case/
-# /case/
-
-from fastapi import FastAPI, Depends, HTTPException, status, Response, Request, Cookie, Security
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import APIKeyHeader, HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import APIRouter, Depends, HTTPException
 
 from case.services import CaseService
 from case.models import CaseDrop
@@ -20,19 +13,12 @@ from inventory.services import InventoryService
 
 from auth.schemas import UserResponse
 
-from database import SessionLocal, engine, get_db, Base
+from database import get_db
 from sqlalchemy.orm import Session
 from typing import List
 from Dependencies import is_admin, get_current_user
 
-Base.metadata.create_all(bind=engine)
-
-app = FastAPI(
-    title="My API",
-    description="This is a custom API using OpenAPI with FastAPI",
-    version="1.0.0",
-    openapi_url="/custom_openapi.json",
-)
+router = APIRouter(prefix="/cases", tags=["Case"])
 
 def get_inventory_repository(db: Session = Depends(get_db)) -> InventoryRepository:
     return InventoryRepository(db)
@@ -48,12 +34,12 @@ def get_public_case_service(
     return CaseService(db)
 
 
-@app.post("/cases/{case_in_inventory_id}/open", response_model=InventoryItem)
+@router.post("/{case_in_inventory_id}/open", response_model=InventoryItem)
 def open_case(case_in_inventory_id: int, case_service: CaseService = Depends(get_case_service)):
     return case_service.open_case(case_in_inventory_id)
 
 
-@app.post("/case/fill", dependencies=[Depends(is_admin)])
+@router.post("/drops", dependencies=[Depends(is_admin)])
 def add_entity_into_case(case_drop: CaseDropAdd, db: Session = Depends(get_db)):
     existing_drop = db.query(CaseDrop).filter(CaseDrop.reward_entity_id == case_drop.reward_entity_id, CaseDrop.case_entity_id == case_drop.case_entity_id).first()
     if existing_drop:
@@ -106,7 +92,7 @@ def add_entity_into_case(case_drop: CaseDropAdd, db: Session = Depends(get_db)):
 
     return db_post
 
-@app.get("/case/drops/{case_id}", response_model=List[CaseDropWithEntityResponse])
+@router.get("/{case_id}/drops", response_model=List[CaseDropWithEntityResponse])
 def get_case_drops(case_id: int, db: Session = Depends(get_db), case_service: CaseService = Depends(get_public_case_service)):
     case_drops = case_service.get_case_drops_with_entities(case_id)
     return validate_drops_with_entity(case_drops)

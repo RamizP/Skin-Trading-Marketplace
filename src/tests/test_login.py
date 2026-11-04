@@ -1,14 +1,6 @@
 from uuid import uuid4
 
-from fastapi.testclient import TestClient
-
-from src.v1.main import app
-
-
-client = TestClient(app)
-
-
-def test_user_can_login():
+def test_user_can_login(client):
     unique_id = uuid4().hex
     username = f"login_user_{unique_id}"
     password = "StrongPassword123!"
@@ -36,7 +28,7 @@ def test_user_can_login():
     assert "token" in login_response.json()
     assert "Authentication" in login_response.cookies
 
-def test_wrong_password_login():
+def test_wrong_password_login(client):
     unique_id = uuid4().hex
     username = f"login_user_{unique_id}"
     password = "StrongPassword123!"
@@ -67,7 +59,7 @@ def test_wrong_password_login():
     assert "Authentication" not in login_response.cookies
 
 
-def test_login_unknown_user():
+def test_login_unknown_user(client):
     response = client.post(
         "/login",
         json={

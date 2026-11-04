@@ -1,12 +1,4 @@
-from fastapi.testclient import TestClient
-
-from src.v1.main import app
-
-
-client = TestClient(app)
-
-
-def test_logout():
+def test_logout(client):
     response = client.post("/logout")
 
     assert response.status_code == 200

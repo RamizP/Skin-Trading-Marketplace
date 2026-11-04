@@ -5,34 +5,16 @@ from inventory.services import InventoryService
 from Dependencies import get_current_user
 from inventory.schemas import InventoryResponse, InventoryCharge
 from entity.schemas import EntityResponse
-from database import engine, get_db, Base
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, Depends, HTTPException, Request
+from database import get_db
+from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 
 from auth.schemas import UserResponse
 
-Base.metadata.create_all(bind=engine)
-
-app = FastAPI(
-    title="My API",
-    description="This is a custom API using OpenAPI with FastAPI",
-    versmion="1.0.0",
-    openapi_url="/custom_openapi.json",
-)
-
-origins = ["*"]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+router = APIRouter(tags=["Inventory"])
 
 
-@app.get("/inventory/me", response_model=List[InventoryResponse])
+@router.get("/inventory/me", response_model=List[InventoryResponse])
 def get_my_inventory(
     db: Session = Depends(get_db), user: UserResponse = Depends(get_current_user)
 ):
@@ -52,7 +34,7 @@ def get_my_inventory(
     return inventory_with_entity(inventory_entities)
 
 
-@app.post("/inventory/me/charge", response_model=List[InventoryResponse])
+@router.post("/inventory/me/charge", response_model=List[InventoryResponse])
 def charge_my_inventory(
     charge_inventory: InventoryCharge,
     db: Session = Depends(get_db),

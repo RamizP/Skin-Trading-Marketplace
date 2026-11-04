@@ -19,6 +19,10 @@ env/
 *.log
 logs/
 
+# IDE settings
+.idea/
+.vscode/
+
 # Local databases and runtime files
 *.db
 *.sqlite

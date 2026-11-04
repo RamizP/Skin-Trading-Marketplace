@@ -1,14 +1,6 @@
 from uuid import uuid4
 
-from fastapi.testclient import TestClient
-
-from src.v1.main import app
-
-
-client = TestClient(app)
-
-
-def test_user_can_get_me():
+def test_user_can_get_me(client):
     unique_id = uuid4().hex
     username = f"login_user_{unique_id}"
     password = "StrongPassword123!"
@@ -39,14 +31,14 @@ def test_user_can_get_me():
 
 
 
-def test_me_without_token():
+def test_me_without_token(client):
     response = client.get("/user/me")
 
     assert response.status_code == 401
 
 
 
-def test_me_with_invalid_token():
+def test_me_with_invalid_token(client):
     response = client.get(
         "/user/me",
         headers={"Authentication": "invalid-token"},

@@ -1,9 +1,8 @@
 from typing import List
 from sqlalchemy.orm import Session
 from Dependencies import get_current_user
-from database import engine, get_db, Base
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, Depends, HTTPException
+from database import get_db
+from fastapi import APIRouter, Depends, HTTPException
 
 from order.services import OrderService
 from inventory.repository import InventoryRepository
@@ -15,28 +14,7 @@ from order.schemas import OrderResponse, OrderCreate, OrderBuy, OrderDelete, ord
 from order.repository import OrderRepository
 from entity.repository import EntityRepository
 
-# Initialize database tables
-Base.metadata.create_all(bind=engine)
-
-app = FastAPI(
-    title="My API",
-    description="OrderService",
-    version="1.0.0",
-    openapi_url="/custom_openapi.json",
-)
-
-
-# List of allowed origins
-origins = ["*"]
-
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+router = APIRouter(tags=["Order"])
 
 def get_user_repository(db: Session = Depends(get_db)) -> AuthRepository:
     return AuthRepository(db)
@@ -68,7 +46,7 @@ def get_order_service(
 # /order/buy            Buy an order
 # /order                Delete an order
 
-@app.get("/orders")
+@router.get("/orders")
 def get_entities_having_sell_order(
     repository: OrderRepository = Depends(get_order_repository),
 ):
@@ -86,7 +64,7 @@ def get_entities_having_sell_order(
 
     return response
 
-@app.get("/orders/{entity_id}", response_model=List[OrderResponse])
+@router.get("/orders/{entity_id}", response_model=List[OrderResponse])
 def get_orders_by_entity(entity_id: int, repository: OrderRepository = Depends(get_order_repository)):
 
     orders = repository.get_orders_by_id(entity_id)
@@ -96,7 +74,7 @@ def get_orders_by_entity(entity_id: int, repository: OrderRepository = Depends(g
     return orders_with_entity(orders)
 
 
-@app.get("/buy-orders/{entity_id}/me", response_model=List[OrderResponse])
+@router.get("/buy-orders/{entity_id}/me", response_model=List[OrderResponse])
 def get_my_buy_orders_by_entity(
     entity_id: int,
     user: UserResponse = Depends(get_current_user),
@@ -105,7 +83,7 @@ def get_my_buy_orders_by_entity(
     return repository.get_user_buy_orders_by_entity(entity_id, user.id)
 
 
-@app.get("/buy-orders/{entity_id}/highest", response_model=OrderResponse)
+@router.get("/buy-orders/{entity_id}/highest", response_model=OrderResponse)
 def get_highest_buy_order_by_entity(
     entity_id: int,
     repository: OrderRepository = Depends(get_order_repository),
@@ -116,7 +94,7 @@ def get_highest_buy_order_by_entity(
     return order
 
 
-@app.post("/orders")
+@router.post("/orders")
 def create_order(
     order: OrderCreate,
     user: UserResponse = Depends(get_current_user),
@@ -125,7 +103,7 @@ def create_order(
     return order_service.create_order(order, user)
 
 
-@app.post("/order/buy", response_model=OrderResponse)
+@router.post("/order/buy", response_model=OrderResponse)
 def order_buy(
     order_buy: OrderBuy,
     user: UserResponse = Depends(get_current_user),
@@ -134,7 +112,7 @@ def order_buy(
     return order_service.order_buy(order_buy, user, in_transaction=False)
 
 
-@app.delete("/order")
+@router.delete("/order")
 def order_delete(
     order_delete: OrderDelete,
     user: UserResponse = Depends(get_current_user),

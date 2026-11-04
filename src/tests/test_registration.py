@@ -1,14 +1,6 @@
 from uuid import uuid4
 
-from fastapi.testclient import TestClient
-
-from src.v1.main import app
-
-
-client = TestClient(app)
-
-
-def test_user_can_register():
+def test_user_can_register(client):
     unique_id = uuid4().hex
 
     response = client.post(
@@ -26,7 +18,7 @@ def test_user_can_register():
     assert "token" in response.json()
     assert "Authentication" in response.cookies
 
-def test_no_double_registration():
+def test_no_double_registration(client):
     unique_id = uuid4().hex
 
     response = client.post(
@@ -54,7 +46,7 @@ def test_no_double_registration():
     assert response.status_code == 400
 
 
-def test_registration_rejects_invalid_email():
+def test_registration_rejects_invalid_email(client):
     response = client.post(
         "/register",
         json={

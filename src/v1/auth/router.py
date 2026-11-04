@@ -1,61 +1,35 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Response, Request, Cookie, Security
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import APIKeyHeader, HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import APIRouter, Depends
 
 from auth.services import AuthService
-from auth.schemas import UserResponse, UserCreate, UserLogin, BalanceCharge, TYPO3Auth
-from auth.strategy.AuthStrategy import TYPO3AuthStrategy
+from auth.schemas import UserResponse, UserCreate, UserLogin, BalanceCharge
 
-from database import SessionLocal, engine, get_db, Base
+from database import get_db
 from sqlalchemy.orm import Session
 
-from Dependencies import is_admin, get_current_user
+from Dependencies import get_current_user
 
-# Initialize database tables
-Base.metadata.create_all(bind=engine)
+router = APIRouter(tags=["Auth"])
 
-app = FastAPI(
-    title="My API",
-    description="This is a custom API using OpenAPI with FastAPI",
-    version="1.0.0",
-    openapi_url="/custom_openapi.json",
-)
-
-# api_key_header = APIKeyHeader(name="Authentication")
-
-origins = [
-    "*"
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],  # or list your actual methods
-    allow_headers=["*"],
-)
-
-@app.post("/register")
+@router.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
     return AuthService().register(user, db)
 
 
-@app.post("/login")
+@router.post("/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
     return AuthService().login(user, db)
 
 
-@app.post("/logout")
+@router.post("/logout")
 def logout():
     return AuthService().logout()
 
-@app.get("/user/me", response_model=UserResponse)
+@router.get("/user/me", response_model=UserResponse)
 def me(user=Depends(get_current_user)):
     return user
 
 
-@app.post("/me/balance/charge")
+@router.post("/me/balance/charge")
 def balance_charge(
     balance_charge: BalanceCharge,
     db: Session = Depends(get_db),
