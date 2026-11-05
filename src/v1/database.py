@@ -11,7 +11,8 @@ load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 # A relative SQLite URL depends on the command's working directory. Keep the
 # development database in one predictable location unless DATABASE_URL overrides it.
 DATABASE_URL = os.getenv(
-    "DATABASE_URL", f"sqlite:///{(PROJECT_ROOT / 'test.db').as_posix()}"
+    "DATABASE_URL",
+    f"sqlite:///{(Path(__file__).resolve().parent / 'test.db').as_posix()}",
 )
 
 engine_options = (
