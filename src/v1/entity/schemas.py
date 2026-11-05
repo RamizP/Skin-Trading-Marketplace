@@ -22,6 +22,7 @@ class EntityCreate(BaseModel):
     category_id: int
     sub_category_id: int | None = None
 
+
 class CategoryResponce(BaseModel):
     id: int
     name: str
@@ -39,6 +40,7 @@ class SubCategoryResponce(BaseModel):
 
 class CategoryCreate(BaseModel):
     name: str
+
 
 class SubCategoryCreate(BaseModel):
     name: str

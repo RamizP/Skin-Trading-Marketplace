@@ -27,6 +27,7 @@ class InventoryCharge(BaseModel):
     entity_id: int
     entity_wear: EntityWear
 
+
 class InventoryItem(BaseModel):
     entity_id: int
     entity_wear: EntityWear
