@@ -28,5 +28,5 @@ class InventoryService:
         )
 
         if not item_from_inventory:
-            raise HTTPException(status_code=404, detail="Item not found.")
+            raise HTTPException(status_code=403, detail="Item not found.")
         return item_from_inventory
