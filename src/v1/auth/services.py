@@ -15,7 +15,7 @@ load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 class AuthService:
     def __init__(self, auth_strategy: AuthStrategyInterface = None):
         self._secret_key = os.getenv("SECRET_KEY")
-        self.token_live_time = int(os.getenv("TOKEN_LIVE_TIME", 60))  # in minutes
+        self.token_live_time = int(os.getenv("TOKEN_LIVE_TIME", "60"))  # in minutes
         self._algorithm = "HS256"
         self.auth_strategy: AuthStrategyInterface = auth_strategy or JWTAuthStrategy(
             self._secret_key, self._algorithm
