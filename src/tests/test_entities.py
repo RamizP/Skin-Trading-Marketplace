@@ -1,7 +1,6 @@
 from uuid import uuid4
 
 import bcrypt
-
 from auth.models import User, UserRole
 from entity.models import Category
 

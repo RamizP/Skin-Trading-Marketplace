@@ -1,32 +1,37 @@
-from fastapi import APIRouter, Depends, HTTPException
-
-from case.services import CaseService
-from case.models import CaseDrop
-from case.schemas import CaseDropResponse, CaseDropAdd, CaseDropWithEntityResponse
-
-from entity.schemas import EntityResponse
-from entity.models import Entity, Category
-
-from inventory.schemas import InventoryItem
-from inventory.repository import InventoryRepository
-from inventory.services import InventoryService
-
 from auth.schemas import UserResponse
-
+from case.models import CaseDrop
+from case.schemas import CaseDropAdd, CaseDropWithEntityResponse
+from case.services import CaseService
 from database import get_db
+from Dependencies import get_current_user, is_admin
+from entity.models import Category, Entity
+from entity.schemas import EntityResponse
+from fastapi import APIRouter, Depends, HTTPException
+from inventory.repository import InventoryRepository
+from inventory.schemas import InventoryItem
+from inventory.services import InventoryService
 from sqlalchemy.orm import Session
-from typing import List
-from Dependencies import is_admin, get_current_user
 
 router = APIRouter(prefix="/cases", tags=["Case"])
 
+
 def get_inventory_repository(db: Session = Depends(get_db)) -> InventoryRepository:
     return InventoryRepository(db)
-def get_inventory_service(repository: InventoryRepository = Depends(get_inventory_repository)) -> InventoryService:
+
+
+def get_inventory_service(
+    repository: InventoryRepository = Depends(get_inventory_repository),
+) -> InventoryService:
     return InventoryService(repository)
 
-def get_case_service(db: Session = Depends(get_db), user: UserResponse = Depends(get_current_user), inventory_service: InventoryService = Depends(get_inventory_service)) -> CaseService:
+
+def get_case_service(
+    db: Session = Depends(get_db),
+    user: UserResponse = Depends(get_current_user),
+    inventory_service: InventoryService = Depends(get_inventory_service),
+) -> CaseService:
     return CaseService(db, user, inventory_service)
+
 
 def get_public_case_service(
     db: Session = Depends(get_db),
@@ -35,13 +40,22 @@ def get_public_case_service(
 
 
 @router.post("/{case_in_inventory_id}/open", response_model=InventoryItem)
-def open_case(case_in_inventory_id: int, case_service: CaseService = Depends(get_case_service)):
+def open_case(
+    case_in_inventory_id: int, case_service: CaseService = Depends(get_case_service)
+):
     return case_service.open_case(case_in_inventory_id)
 
 
 @router.post("/drops", dependencies=[Depends(is_admin)])
 def add_entity_into_case(case_drop: CaseDropAdd, db: Session = Depends(get_db)):
-    existing_drop = db.query(CaseDrop).filter(CaseDrop.reward_entity_id == case_drop.reward_entity_id, CaseDrop.case_entity_id == case_drop.case_entity_id).first()
+    existing_drop = (
+        db.query(CaseDrop)
+        .filter(
+            CaseDrop.reward_entity_id == case_drop.reward_entity_id,
+            CaseDrop.case_entity_id == case_drop.case_entity_id,
+        )
+        .first()
+    )
     if existing_drop:
         raise HTTPException(status_code=400, detail="Drop exists")
 
@@ -65,11 +79,7 @@ def add_entity_into_case(case_drop: CaseDropAdd, db: Session = Depends(get_db)):
             detail="Case cannot contain itself",
         )
 
-    case_category = (
-        db.query(Category)
-        .filter(Category.name == "case")
-        .first()
-    )
+    case_category = db.query(Category).filter(Category.name == "case").first()
 
     if not case_category or case_entity.category_id != case_category.id:
         raise HTTPException(
@@ -77,14 +87,17 @@ def add_entity_into_case(case_drop: CaseDropAdd, db: Session = Depends(get_db)):
             detail="Entity is not a case",
         )
 
-    if reward_entity.category_id==case_category.id:
+    if reward_entity.category_id == case_category.id:
         raise HTTPException(
             status_code=400,
             detail="Reward cannot be a case",
         )
 
-
-    db_post = CaseDrop(case_entity_id = case_drop.case_entity_id, reward_entity_id = case_drop.reward_entity_id, weight = case_drop.weight)
+    db_post = CaseDrop(
+        case_entity_id=case_drop.case_entity_id,
+        reward_entity_id=case_drop.reward_entity_id,
+        weight=case_drop.weight,
+    )
 
     db.add(db_post)
     db.commit()
@@ -92,12 +105,18 @@ def add_entity_into_case(case_drop: CaseDropAdd, db: Session = Depends(get_db)):
 
     return db_post
 
-@router.get("/{case_id}/drops", response_model=List[CaseDropWithEntityResponse])
-def get_case_drops(case_id: int, db: Session = Depends(get_db), case_service: CaseService = Depends(get_public_case_service)):
+
+@router.get("/{case_id}/drops", response_model=list[CaseDropWithEntityResponse])
+def get_case_drops(
+    case_id: int,
+    db: Session = Depends(get_db),
+    case_service: CaseService = Depends(get_public_case_service),
+):
     case_drops = case_service.get_case_drops_with_entities(case_id)
     return validate_drops_with_entity(case_drops)
 
-def validate_drops_with_entity(case_drops) -> List[CaseDropWithEntityResponse]:
+
+def validate_drops_with_entity(case_drops) -> list[CaseDropWithEntityResponse]:
 
     return [
         CaseDropWithEntityResponse(

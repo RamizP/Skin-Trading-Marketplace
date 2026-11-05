@@ -1,14 +1,12 @@
-from fastapi import APIRouter, Depends
-
+from auth.schemas import BalanceCharge, UserCreate, UserLogin, UserResponse
 from auth.services import AuthService
-from auth.schemas import UserResponse, UserCreate, UserLogin, BalanceCharge
-
 from database import get_db
+from Dependencies import get_current_user
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from Dependencies import get_current_user
-
 router = APIRouter(tags=["Auth"])
+
 
 @router.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -23,6 +21,7 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
 @router.post("/logout")
 def logout():
     return AuthService().logout()
+
 
 @router.get("/user/me", response_model=UserResponse)
 def me(user=Depends(get_current_user)):

@@ -1,12 +1,9 @@
+from entity.models import Category, Entity, SubCategory
+from entity.schemas import EntityCreate
 from fastapi import HTTPException
-from entity.schemas import EntityResponse, EntityCreate
-from entity.models import Base, Entity, Category, SubCategory
-from database import SessionLocal, engine
-from sqlalchemy.orm import Session
 
 
 class EntityRepository:
-
     def __init__(self, db):
         self.db = db
 
@@ -19,7 +16,7 @@ class EntityRepository:
             image_url=entity.image_url,
             entity_rarity=entity.entity_rarity,
             category_id=entity.category_id,
-            sub_category_id=entity.sub_category_id
+            sub_category_id=entity.sub_category_id,
         )
 
         self.db.add(db_post)
@@ -38,17 +35,25 @@ class EntityRepository:
         return entity
 
     def category_validate(self, category_id: int, sub_category_id: int):
-        if (category_id != None and not self.db.query(Category).filter(Category.id == category_id).first()):
+        if (
+            category_id != None
+            and not self.db.query(Category).filter(Category.id == category_id).first()
+        ):
             return False
 
         if sub_category_id is None:
             return True
 
-        if (sub_category_id != None and not self.db.query(SubCategory).filter(SubCategory.id == sub_category_id).first()):
+        if (
+            sub_category_id != None
+            and not self.db.query(SubCategory)
+            .filter(SubCategory.id == sub_category_id)
+            .first()
+        ):
             return False
 
-        sub_category = self.db.query(SubCategory).filter(SubCategory.id == sub_category_id).first()
+        sub_category = (
+            self.db.query(SubCategory).filter(SubCategory.id == sub_category_id).first()
+        )
 
-        if sub_category.category_id != category_id:
-            return False
-        return True
+        return sub_category.category_id == category_id

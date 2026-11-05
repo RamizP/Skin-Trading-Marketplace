@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field
-from entity.schemas import EntityResponse
 from typing import Annotated
+
+from entity.schemas import EntityResponse
+from pydantic import BaseModel, Field
 
 
 class CaseDropResponse(BaseModel):
@@ -12,6 +13,7 @@ class CaseDropResponse(BaseModel):
     class Config:
         orm_mode = True
         from_attributes = True
+
 
 class CaseDropWithEntityResponse(CaseDropResponse):
     entity: EntityResponse

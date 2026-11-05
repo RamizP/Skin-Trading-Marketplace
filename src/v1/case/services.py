@@ -1,17 +1,16 @@
-from sqlalchemy import func, select
-from entity.models import Entity
-from case.models import CaseDrop
-from case.schemas import CaseDropResponse
-from auth.schemas import UserResponse
-from inventory.schemas import InventoryCharge
-from inventory.models import EntityWear
-from inventory.services import InventoryService
 import random
-from fastapi import FastAPI, HTTPException
+
+from auth.schemas import UserResponse
+from case.models import CaseDrop
+from entity.models import Entity
+from fastapi import HTTPException
+from inventory.models import EntityWear
+from inventory.schemas import InventoryCharge
+from inventory.services import InventoryService
 
 
 class CaseService:
-    def __init__(self, db, user = None, inventory_service = None):
+    def __init__(self, db, user=None, inventory_service=None):
         self.db = db
         self.user: UserResponse = user
         self.inventory_service: InventoryService = inventory_service
@@ -36,7 +35,9 @@ class CaseService:
 
             random_wear = self.get_random_wear()
 
-            item_to_add = InventoryCharge(entity_id=random_drop, entity_wear=random_wear)
+            item_to_add = InventoryCharge(
+                entity_id=random_drop, entity_wear=random_wear
+            )
 
             reward = InventoryService.charge(item_to_add, self.user, self.db)
 
@@ -45,8 +46,7 @@ class CaseService:
 
             return reward
 
-
-        except Exception as e:
+        except Exception:
             self.db.rollback()
             raise
 

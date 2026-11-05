@@ -1,20 +1,18 @@
-from sqlalchemy.orm import Session
-from inventory.models import UserInventory
-from entity.models import Entity
-from inventory.services import InventoryService
-from Dependencies import get_current_user
-from inventory.schemas import InventoryResponse, InventoryCharge
-from entity.schemas import EntityResponse
-from database import get_db
-from fastapi import APIRouter, Depends, HTTPException
-from typing import List
-
 from auth.schemas import UserResponse
+from database import get_db
+from Dependencies import get_current_user
+from entity.models import Entity
+from entity.schemas import EntityResponse
+from fastapi import APIRouter, Depends, HTTPException
+from inventory.models import UserInventory
+from inventory.schemas import InventoryCharge, InventoryResponse
+from inventory.services import InventoryService
+from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["Inventory"])
 
 
-@router.get("/inventory/me", response_model=List[InventoryResponse])
+@router.get("/inventory/me", response_model=list[InventoryResponse])
 def get_my_inventory(
     db: Session = Depends(get_db), user: UserResponse = Depends(get_current_user)
 ):
@@ -34,7 +32,7 @@ def get_my_inventory(
     return inventory_with_entity(inventory_entities)
 
 
-@router.post("/inventory/me/charge", response_model=List[InventoryResponse])
+@router.post("/inventory/me/charge", response_model=list[InventoryResponse])
 def charge_my_inventory(
     charge_inventory: InventoryCharge,
     db: Session = Depends(get_db),
@@ -56,7 +54,7 @@ def charge_my_inventory(
     return inventory_with_entity(inventory_entities)
 
 
-def inventory_with_entity(inventory) -> List[InventoryResponse]:
+def inventory_with_entity(inventory) -> list[InventoryResponse]:
 
     return [
         InventoryResponse(

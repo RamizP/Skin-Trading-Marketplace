@@ -1,8 +1,8 @@
-from sqlalchemy import String, Column, Integer, Text, ForeignKey, Enum, DateTime
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
-from database import Base
 import enum
+
+from database import Base
+from sqlalchemy import Column, DateTime, Enum, Integer, String
+from sqlalchemy.sql import func
 
 
 class UserRole(str, enum.Enum):

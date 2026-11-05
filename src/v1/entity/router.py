@@ -1,23 +1,22 @@
-from sqlalchemy.orm import Session
-from entity.models import Entity, Category, SubCategory
-from entity.repository import EntityRepository
-from entity.services import EntityService
+from database import get_db
 from Dependencies import is_admin
+from entity.models import Category, Entity, SubCategory
+from entity.repository import EntityRepository
 from entity.schemas import (
     CategoryCreate,
     CategoryResponce,
-    EntityResponse,
     EntityCreate,
+    EntityResponse,
     SubCategoryCreate,
     SubCategoryResponce,
 )
-from database import get_db
+from entity.services import EntityService
 from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
 )
-from typing import List
+from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["Entity"])
 
@@ -27,7 +26,7 @@ def create_entity(entity: EntityCreate, db: Session = Depends(get_db)):
     return EntityService.create_entity(entity, db)
 
 
-@router.get("/entities", response_model=List[EntityResponse])
+@router.get("/entities", response_model=list[EntityResponse])
 async def list_entities(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     return EntityRepository(db).get_all_entities(skip, limit)
 
@@ -42,7 +41,9 @@ def get_entity_by_id(entity_id: int, db: Session = Depends(get_db)):
 
 @router.post("/category", dependencies=[Depends(is_admin)])
 def create_category(category: CategoryCreate, db: Session = Depends(get_db)):
-    existing_category = db.query(Category).filter(Category.name == category.name).first()
+    existing_category = (
+        db.query(Category).filter(Category.name == category.name).first()
+    )
     if existing_category:
         raise HTTPException(status_code=400, detail="Category exists")
     db_post = Category(name=category.name)
@@ -56,7 +57,9 @@ def create_category(category: CategoryCreate, db: Session = Depends(get_db)):
 
 @router.post("/sub-category", dependencies=[Depends(is_admin)])
 def create_sub_category(sub_category: SubCategoryCreate, db: Session = Depends(get_db)):
-    existing_sub_category = db.query(SubCategory).filter(SubCategory.name == sub_category.name).first()
+    existing_sub_category = (
+        db.query(SubCategory).filter(SubCategory.name == sub_category.name).first()
+    )
     if existing_sub_category:
         raise HTTPException(status_code=400, detail="SubCategory exists")
     db_post = SubCategory(name=sub_category.name, category_id=sub_category.category_id)
@@ -68,11 +71,11 @@ def create_sub_category(sub_category: SubCategoryCreate, db: Session = Depends(g
     return db_post
 
 
-@router.get("/category", response_model=List[CategoryResponce])
+@router.get("/category", response_model=list[CategoryResponce])
 def get_category(db: Session = Depends(get_db)):
     return db.query(Category).all()
 
 
-@router.get("/sub-category", response_model=List[SubCategoryResponce])
+@router.get("/sub-category", response_model=list[SubCategoryResponce])
 def get_sub_category(db: Session = Depends(get_db)):
     return db.query(SubCategory).all()

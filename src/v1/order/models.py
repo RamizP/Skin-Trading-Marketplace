@@ -1,12 +1,14 @@
-from sqlalchemy import String, Column, Integer, DateTime, Float, Enum
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
-from database import Base
 from enum import Enum as PyEnum
+
+from database import Base
+from sqlalchemy import Column, DateTime, Enum, Float, Integer
+from sqlalchemy.sql import func
+
 
 class Side(PyEnum):
     SELL = "sell"
     BUY = "buy"
+
 
 class Order(Base):
     __tablename__ = "order"

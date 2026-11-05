@@ -1,28 +1,20 @@
-from fastapi import HTTPException
-
-from sqlalchemy import update
 from auth.models import User
-from order.models import Order, Side
-from inventory.models import UserInventory
-from order.repository import OrderRepository
 from auth.repository import AuthRepository
-from order.schemas import OrderCreate, OrderDelete, OrderBuy, OrderResponse
-from order.validation import _validate_order_input
-
-from inventory.services import InventoryService
-
-from uow import UnitOfWork, SQLiteUnitOfWork
-
 from auth.schemas import UserResponse
-from inventory.schemas import InventoryResponse
-from entity.schemas import EntityResponse
-
-from trading.engine import TradingEngine
 from entity.repository import EntityRepository
+from fastapi import HTTPException
+from inventory.models import UserInventory
+from inventory.services import InventoryService
+from order.models import Order, Side
+from order.repository import OrderRepository
+from order.schemas import OrderBuy, OrderCreate, OrderDelete, OrderResponse
+from order.validation import _validate_order_input
+from sqlalchemy import update
+from trading.engine import TradingEngine
+from uow import SQLiteUnitOfWork, UnitOfWork
 
 
 class OrderService:
-
     def __init__(
         self,
         db,
@@ -67,7 +59,7 @@ class OrderService:
             self.engine.execute_match(self.db, db_post, user, in_transaction=True)
 
             self.uow.commit()
-        except Exception as e:
+        except Exception:
             self.uow.rollback()
             raise
 
@@ -120,7 +112,7 @@ class OrderService:
                 self.uow.commit()
 
             return OrderResponse.model_validate(order_to_buy)
-        except Exception as e:
+        except Exception:
             if in_transaction == False:
                 self.uow.rollback()
             raise
@@ -153,7 +145,7 @@ class OrderService:
                 item_in_inventory.in_sale = False
             self.uow.commit()
 
-        except Exception as e:
+        except Exception:
             self.uow.rollback()
             raise
 

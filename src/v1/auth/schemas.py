@@ -1,5 +1,6 @@
-from pydantic import BaseModel, EmailStr, conint
 from datetime import datetime
+
+from pydantic import BaseModel, EmailStr, conint
 
 
 class UserResponse(BaseModel):
@@ -34,6 +35,7 @@ class UserLogin(BaseModel):
 
 class BalanceCharge(BaseModel):
     amount: conint(gt=0)
+
 
 class TYPO3Auth(BaseModel):
     token: str

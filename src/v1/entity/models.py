@@ -1,8 +1,8 @@
 from enum import Enum as PyEnum
-from sqlalchemy import String, Column, Integer, Text, ForeignKey, Enum, DateTime
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
+
 from database import Base
+from sqlalchemy import Column, Enum, Integer, String
+
 
 class EntityRarity(PyEnum):
     COMMON = "common"
@@ -11,6 +11,7 @@ class EntityRarity(PyEnum):
     MYTHICAL = "mythical"
     LEGENDARY = "legendary"
     EXCEEDINGLY_RARE = "exceedingly_rare"
+
 
 class Entity(Base):
     __tablename__ = "entity"
@@ -23,11 +24,13 @@ class Entity(Base):
     category_id = Column(Integer, nullable=True)
     sub_category_id = Column(Integer, nullable=True)
 
+
 class Category(Base):
     __tablename__ = "category"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False, unique=True)
+
 
 class SubCategory(Base):
     __tablename__ = "sub_category"

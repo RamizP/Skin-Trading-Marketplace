@@ -1,24 +1,24 @@
-from fastapi.responses import JSONResponse
-from auth.strategy.AuthStrategyInterface import AuthStrategyInterface
-import jwt
-from jwt import ExpiredSignatureError, InvalidTokenError
-from auth.models import Base, User
-from auth.utils import AuthUtils
-
-from dotenv import load_dotenv
-from fastapi import HTTPException, Request
 from datetime import datetime, timedelta
-from auth.schemas import JwtData, UserResponse
-from auth.repository import AuthRepository
-from sqlalchemy.orm import Session
-from sqlalchemy import or_
+
 import Exceptions
+import jwt
+from auth.models import User
+from auth.repository import AuthRepository
+from auth.schemas import JwtData, UserResponse
+from auth.strategy.AuthStrategyInterface import AuthStrategyInterface
+from auth.utils import AuthUtils
+from fastapi import HTTPException
+from fastapi.responses import JSONResponse
+from sqlalchemy import or_
+from sqlalchemy.orm import Session
 
 
 class JWTAuthStrategy(AuthStrategyInterface):
     """Strategy for JWT-based authentication."""
 
-    def __init__(self, secret_key: str, algorithm: str = "HS256", token_duration: int = 600):
+    def __init__(
+        self, secret_key: str, algorithm: str = "HS256", token_duration: int = 600
+    ):
 
         self._secret_key = secret_key
         self._algorithm = algorithm
@@ -40,14 +40,20 @@ class JWTAuthStrategy(AuthStrategyInterface):
             key="Authentication",
             value=token,
             httponly=True,
-            secure=True,          # REQUIRED for HTTPS
-            samesite="none",      # REQUIRED for cross-origin
-            max_age=60 * 60 * 24, # equal to 1 day
+            secure=True,  # REQUIRED for HTTPS
+            samesite="none",  # REQUIRED for cross-origin
+            max_age=60 * 60 * 24,  # equal to 1 day
         )
         return response
 
     def register(self, user_data, db):
-        existing_user = db.query(User).filter(or_(User.username == user_data.username, User.email == user_data.email)).first()
+        existing_user = (
+            db.query(User)
+            .filter(
+                or_(User.username == user_data.username, User.email == user_data.email)
+            )
+            .first()
+        )
         if existing_user:
             raise HTTPException(status_code=400, detail="Something went wrong")
 
@@ -124,7 +130,6 @@ class JWTAuthStrategy(AuthStrategyInterface):
             )
 
         except Exception as e:
-
             print(f"Error fetching user: {e}")
             raise HTTPException(
                 status_code=401, detail="Invalid token or user not found"
@@ -135,23 +140,25 @@ class OAuth2AuthStrategy: ...
 
 
 import requests
-import json
+
 
 class TYPO3AuthStrategy(AuthStrategyInterface):
-
     def login(self, typo3_token):
         raise NotImplementedError("TYPO3 login is not implemented yet")
 
     def register(self, typo3_token, db):
         cookies = {
-            'fe_typo_user': typo3_token,
+            "fe_typo_user": typo3_token,
         }
-        user = requests.get('https://c-marketing.rpashaiev.ddev.site/api?type=788787878', cookies=cookies, verify=False).json()
+        user = requests.get(
+            "https://c-marketing.rpashaiev.ddev.site/api?type=788787878",
+            cookies=cookies,
+            verify=False,
+        ).json()
         user_exists = db.query(User).filter(User.email == user.get("email")).first()
 
         if user_exists:
             raise NotImplementedError("TYPO3 registration unsuccessfull")
-
 
         raise NotImplementedError("TYPO3 registration is not implemented yet")
 
@@ -160,6 +167,10 @@ class TYPO3AuthStrategy(AuthStrategyInterface):
 
     def current_user(self, typo3_token, db):
         cookies = {
-            'fe_typo_user': typo3_token,
+            "fe_typo_user": typo3_token,
         }
-        return requests.get('https://c-marketing.rpashaiev.ddev.site/api?type=788787878', cookies=cookies, verify=False).json()
+        return requests.get(
+            "https://c-marketing.rpashaiev.ddev.site/api?type=788787878",
+            cookies=cookies,
+            verify=False,
+        ).json()

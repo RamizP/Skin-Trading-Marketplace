@@ -1,10 +1,9 @@
-from pydantic import BaseModel
 from datetime import datetime
-from order.models import Side, Order
-from typing import List
 
-from inventory.schemas import InventoryResponse
 from entity.schemas import EntityResponse
+from inventory.schemas import InventoryResponse
+from order.models import Order, Side
+from pydantic import BaseModel
 
 
 class OrderCreate(BaseModel):
@@ -12,6 +11,7 @@ class OrderCreate(BaseModel):
     entity_id: int | None = None
     price: float
     side: Side
+
     class Config:
         orm_mode = True
         from_attributes = True
@@ -39,8 +39,8 @@ class OrderDelete(BaseModel):
     order_id: int
 
 
-#Mapping
-def orders_with_entity(orders: List[Order]) -> List[OrderResponse]:
+# Mapping
+def orders_with_entity(orders: list[Order]) -> list[OrderResponse]:
     return [
         OrderResponse(
             **ord.__dict__,
@@ -51,7 +51,7 @@ def orders_with_entity(orders: List[Order]) -> List[OrderResponse]:
                 entity_wear=inv.entity_wear,
                 entity=EntityResponse.model_validate(ent),
                 in_sale=inv.in_sale,
-            )
+            ),
         )
         for ord, inv, ent in orders
     ]

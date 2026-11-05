@@ -1,6 +1,6 @@
-from pydantic import BaseModel
-from datetime import datetime
 from entity.models import EntityRarity
+from pydantic import BaseModel
+
 
 class EntityResponse(BaseModel):
     id: int
@@ -28,6 +28,7 @@ class EntityCreate(BaseModel):
         orm_mode = True
         from_attributes = True
 
+
 class CategoryResponce(BaseModel):
     id: int
     name: str
@@ -35,6 +36,7 @@ class CategoryResponce(BaseModel):
     class Config:
         orm_mode = True
         from_attributes = True
+
 
 class SubCategoryResponce(BaseModel):
     id: int
@@ -45,12 +47,14 @@ class SubCategoryResponce(BaseModel):
         orm_mode = True
         from_attributes = True
 
+
 class CategoryCreate(BaseModel):
     name: str
 
     class Config:
         orm_mode = True
         from_attributes = True
+
 
 class SubCategoryCreate(BaseModel):
     name: str

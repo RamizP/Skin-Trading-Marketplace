@@ -1,5 +1,6 @@
 from uuid import uuid4
 
+
 def test_user_can_register(client):
     unique_id = uuid4().hex
 
@@ -17,6 +18,7 @@ def test_user_can_register(client):
     assert response.status_code == 200
     assert "token" in response.json()
     assert "Authentication" in response.cookies
+
 
 def test_no_double_registration(client):
     unique_id = uuid4().hex

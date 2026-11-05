@@ -1,12 +1,10 @@
-from sqlalchemy import func
-
 from entity.models import Entity
 from inventory.models import UserInventory
 from order.models import Order, Side
+from sqlalchemy import func
 
 
 class OrderRepository:
-
     def __init__(self, db):
         self.db = db
 

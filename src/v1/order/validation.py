@@ -7,11 +7,13 @@ from order.models import Side
 #     if inventory.in_sale:
 #         raise HTTPException(status_code=400, detail="Item is already in sale.")
 
+
 def _validate_order_input(order):
     if order.price <= 0:
         raise HTTPException(status_code=400, detail="Price must be greater than 0.")
     if order.side not in (Side.BUY, Side.SELL):
         raise HTTPException(status_code=400, detail="Invalid order side.")
+
 
 # def _validate_buy_order(order_to_buy, buyer):
 #         if order_to_buy.user_id == buyer.id:

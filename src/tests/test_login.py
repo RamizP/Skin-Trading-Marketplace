@@ -1,5 +1,6 @@
 from uuid import uuid4
 
+
 def test_user_can_login(client):
     unique_id = uuid4().hex
     username = f"login_user_{unique_id}"
@@ -27,6 +28,7 @@ def test_user_can_login(client):
     assert login_response.status_code == 200
     assert "token" in login_response.json()
     assert "Authentication" in login_response.cookies
+
 
 def test_wrong_password_login(client):
     unique_id = uuid4().hex

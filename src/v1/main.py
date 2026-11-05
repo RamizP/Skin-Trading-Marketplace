@@ -1,13 +1,11 @@
 import uvicorn
-from fastapi import FastAPI
-
 from auth.router import router as auth_router
+from case.router import router as case_router
 from entity.router import router as entity_router
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from inventory.router import router as inventory_router
 from order.router import router as order_router
-from case.router import router as case_router
-
-from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Trading Engine")
 
@@ -32,4 +30,9 @@ app.include_router(case_router)
 
 if __name__ == "__main__":
     # uvicorn.run(app, host="0.0.0.0", port=8000, ssl_keyfile="key.pem", ssl_certfile="cert.pem")
-    uvicorn.run("main:app", port=8000, ssl_keyfile="certificates/key.pem", ssl_certfile="certificates/cert.pem")
+    uvicorn.run(
+        "main:app",
+        port=8000,
+        ssl_keyfile="certificates/key.pem",
+        ssl_certfile="certificates/cert.pem",
+    )

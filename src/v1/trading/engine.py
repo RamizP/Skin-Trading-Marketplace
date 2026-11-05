@@ -1,11 +1,9 @@
-from order.schemas import OrderBuy
-from order.models import Order, Side
-
 from auth.models import User
+from order.models import Order, Side
+from order.schemas import OrderBuy
 
 
 class TradingEngine:
-
     def __init__(self, order_service):
         self.order_service = order_service
 

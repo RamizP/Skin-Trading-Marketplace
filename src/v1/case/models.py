@@ -1,6 +1,6 @@
-from enum import Enum as PyEnum
-from sqlalchemy import Column, Integer, ForeignKey, UniqueConstraint
 from database import Base
+from sqlalchemy import Column, ForeignKey, Integer, UniqueConstraint
+
 
 class CaseDrop(Base):
     __tablename__ = "case_drop"

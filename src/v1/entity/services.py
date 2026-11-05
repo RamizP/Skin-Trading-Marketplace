@@ -1,8 +1,7 @@
-import os
-from fastapi import HTTPException
-from entity.schemas import EntityResponse, EntityCreate
 from entity.models import Entity
 from entity.repository import EntityRepository
+from entity.schemas import EntityCreate
+from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
 

@@ -1,16 +1,13 @@
 import os
-from dotenv import load_dotenv
-from fastapi import HTTPException, Header, Request
-from fastapi.responses import JSONResponse
-from pytest import Session
-from auth.models import User
-from auth.utils import AuthUtils
-from auth.repository import AuthRepository
-import Exceptions
-from auth.schemas import UserResponse
-from auth.strategy.AuthStrategy import JWTAuthStrategy, TYPO3AuthStrategy
-from auth.strategy import AuthStrategyInterface
 from pathlib import Path
+
+from auth.models import User
+from auth.schemas import UserResponse
+from auth.strategy import AuthStrategyInterface
+from auth.strategy.AuthStrategy import JWTAuthStrategy
+from dotenv import load_dotenv
+from fastapi import HTTPException
+from pytest import Session
 
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
@@ -20,7 +17,9 @@ class AuthService:
         self._secret_key = os.getenv("SECRET_KEY")
         self.token_live_time = int(os.getenv("TOKEN_LIVE_TIME", 60))  # in minutes
         self._algorithm = "HS256"
-        self.auth_strategy: AuthStrategyInterface = auth_strategy or JWTAuthStrategy(self._secret_key, self._algorithm)
+        self.auth_strategy: AuthStrategyInterface = auth_strategy or JWTAuthStrategy(
+            self._secret_key, self._algorithm
+        )
 
     def login(self, user, db):
         return self.auth_strategy.login(user, db)
