@@ -127,7 +127,7 @@ class OrderService:
 
             if not order_to_delete or order_to_delete.user_id != user.id:
                 raise HTTPException(
-                    status_code=404, detail="It seems you cant delete this order."
+                    status_code=403, detail="It seems you cant delete this order."
                 )
 
             if order_to_delete.side == Side.SELL:
