@@ -1,25 +1,38 @@
-from sqlalchemy import create_engine
+import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-# Using SQLite for development. The database will be stored in a file.
-DATABASE_URL = (
-    "sqlite:///./test.db"  # This creates a file `test.db` in the current directory
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+
+# A relative SQLite URL depends on the command's working directory. Keep the
+# development database in one predictable location unless DATABASE_URL overrides it.
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", f"sqlite:///{(PROJECT_ROOT / 'test.db').as_posix()}"
 )
 
-# Create a synchronous SQLAlchemy engine
-engine = create_engine(
-    DATABASE_URL, connect_args={"check_same_thread": False}
-)  # Required for SQLite
+engine_options = (
+    {"connect_args": {"check_same_thread": False}}
+    if DATABASE_URL.startswith("sqlite")
+    else {}
+)
+engine = create_engine(DATABASE_URL, **engine_options)
+
+if DATABASE_URL.startswith("sqlite"):
+
+    @event.listens_for(engine, "connect")
+    def enable_sqlite_foreign_keys(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Base class for models
 Base = declarative_base()
-
-# Base.metadata.drop_all(bind=engine)
-
-Base.metadata.create_all(bind=engine)
-
 
 def get_db():
     db = SessionLocal()

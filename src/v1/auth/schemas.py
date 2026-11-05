@@ -1,6 +1,8 @@
 from datetime import datetime
+from decimal import Decimal
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, EmailStr, conint
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserResponse(BaseModel):
@@ -12,7 +14,7 @@ class UserResponse(BaseModel):
     image_url: str | None = None
     bio: str | None = None
     location: str | None = None
-    balance: int | None = 0
+    balance: Decimal
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -32,7 +34,7 @@ class UserLogin(BaseModel):
 
 
 class BalanceCharge(BaseModel):
-    amount: conint(gt=0)
+    amount: Annotated[Decimal, Field(gt=0, max_digits=12, decimal_places=2)]
 
 
 class TYPO3Auth(BaseModel):

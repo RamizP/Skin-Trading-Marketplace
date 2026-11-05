@@ -1,7 +1,7 @@
 import enum
 
 from database import Base
-from sqlalchemy import Column, DateTime, Enum, Integer, String
+from sqlalchemy import Column, DateTime, Enum, Integer, Numeric, String
 from sqlalchemy.sql import func
 
 
@@ -27,5 +27,5 @@ class User(Base):
     image_url = Column(String(512), nullable=True)
     bio = Column(String(512), nullable=True)
     location = Column(String(255), nullable=True)
-    balance = Column(Integer, default=0)
+    balance = Column(Numeric(12, 2), nullable=False, server_default="0")
     created_at = Column(DateTime(timezone=True), server_default=func.now())

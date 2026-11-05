@@ -16,10 +16,15 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from database import Base  # adjust the import path
+from auth.models import User
+from case.models import CaseDrop
+from database import Base, DATABASE_URL
+from entity.models import Category, Entity, SubCategory
+from inventory.models import UserInventory
+from order.models import Order
 
 target_metadata = Base.metadata
-print("Tables in metadata:", target_metadata.tables.keys())
+config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

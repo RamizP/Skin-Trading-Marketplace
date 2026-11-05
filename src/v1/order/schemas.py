@@ -1,23 +1,34 @@
 from datetime import datetime
+from decimal import Decimal
 
 from entity.schemas import EntityResponse
 from inventory.schemas import InventoryResponse
 from order.models import Order, Side
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class OrderCreate(BaseModel):
-    entity_in_inventory_id: int | None = None
-    entity_id: int | None = None
-    price: float
+    entity_in_inventory_id: int | None = Field(default=None, gt=0)
+    entity_id: int = Field(gt=0)
+    price: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
     side: Side
+
+    @model_validator(mode="after")
+    def validate_order_type(self):
+        if self.side == Side.SELL and self.entity_in_inventory_id is None:
+            raise ValueError("Sell orders require an inventory item.")
+
+        if self.side == Side.BUY and self.entity_in_inventory_id is not None:
+            raise ValueError("Buy orders cannot reference an inventory item.")
+
+        return self
 
 
 class OrderResponse(BaseModel):
     id: int
     user_id: int
     entity_id: int
-    price: float
+    price: Decimal
     side: Side
     inventory: InventoryResponse | None = None
     created_at: datetime

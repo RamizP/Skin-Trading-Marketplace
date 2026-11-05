@@ -38,7 +38,7 @@ class OrderService:
             self.uow.begin()
             inventory = None
 
-            if order.side == Side.SELL and order.entity_in_inventory_id != 0:
+            if order.side == Side.SELL and order.entity_in_inventory_id is not None:
                 inventory = self.inventory_service.get_inventory_item_locked(
                     order.entity_in_inventory_id, user.id
                 )

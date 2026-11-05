@@ -76,10 +76,6 @@ class JWTAuthStrategy(AuthStrategyInterface):
         response.delete_cookie("Authentication")
         return response
 
-    def get_user(self, user_data, db):
-        # Implementation for retrieving a user
-        pass
-
     def create_token(self, user_id) -> str:
         if not user_id:
             raise HTTPException(status_code=400, detail="User ID is required")
@@ -111,66 +107,8 @@ class JWTAuthStrategy(AuthStrategyInterface):
             raise HTTPException(status_code=400, detail="Token must be a string")
 
         jwt_data = self.validate_jwt(token)
-        try:
-            user = db.query(User).filter(User.id == int(jwt_data.sub)).first()
+        user = db.query(User).filter(User.id == int(jwt_data.sub)).first()
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
 
-            if not user:
-                raise HTTPException(status_code=401, detail="User not found")
-            return UserResponse(
-                id=user.id,
-                username=user.username,
-                email=user.email,
-                role=user.role,
-                status=user.status,
-                image_url=user.image_url,
-                bio=user.bio,
-                location=user.location,
-                balance=user.balance,
-                created_at=user.created_at,
-            )
-
-        except Exception as e:
-            print(f"Error fetching user: {e}")
-            raise HTTPException(
-                status_code=401, detail="Invalid token or user not found"
-            )
-
-
-class OAuth2AuthStrategy: ...
-
-
-import requests
-
-
-class TYPO3AuthStrategy(AuthStrategyInterface):
-    def login(self, typo3_token):
-        raise NotImplementedError("TYPO3 login is not implemented yet")
-
-    def register(self, typo3_token, db):
-        cookies = {
-            "fe_typo_user": typo3_token,
-        }
-        user = requests.get(
-            "https://c-marketing.rpashaiev.ddev.site/api?type=788787878",
-            cookies=cookies,
-            verify=False,
-        ).json()
-        user_exists = db.query(User).filter(User.email == user.get("email")).first()
-
-        if user_exists:
-            raise NotImplementedError("TYPO3 registration unsuccessfull")
-
-        raise NotImplementedError("TYPO3 registration is not implemented yet")
-
-    def logout(self, typo3_token):
-        raise NotImplementedError("TYPO3 logout is not implemented yet")
-
-    def current_user(self, typo3_token, db):
-        cookies = {
-            "fe_typo_user": typo3_token,
-        }
-        return requests.get(
-            "https://c-marketing.rpashaiev.ddev.site/api?type=788787878",
-            cookies=cookies,
-            verify=False,
-        ).json()
+        return UserResponse.model_validate(user)

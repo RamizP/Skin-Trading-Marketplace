@@ -7,7 +7,7 @@ from auth.strategy import AuthStrategyInterface
 from auth.strategy.AuthStrategy import JWTAuthStrategy
 from dotenv import load_dotenv
 from fastapi import HTTPException
-from pytest import Session
+from sqlalchemy.orm import Session
 
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
@@ -15,10 +15,13 @@ load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 class AuthService:
     def __init__(self, auth_strategy: AuthStrategyInterface = None):
         self._secret_key = os.getenv("SECRET_KEY")
+        if not self._secret_key:
+            raise RuntimeError("SECRET_KEY must be set")
+
         self.token_live_time = int(os.getenv("TOKEN_LIVE_TIME", "60"))  # in minutes
         self._algorithm = "HS256"
         self.auth_strategy: AuthStrategyInterface = auth_strategy or JWTAuthStrategy(
-            self._secret_key, self._algorithm
+            self._secret_key, self._algorithm, self.token_live_time
         )
 
     def login(self, user, db):
