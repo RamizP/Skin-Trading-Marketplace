@@ -3,7 +3,7 @@ from datetime import datetime
 from entity.schemas import EntityResponse
 from inventory.schemas import InventoryResponse
 from order.models import Order, Side
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class OrderCreate(BaseModel):
@@ -11,11 +11,6 @@ class OrderCreate(BaseModel):
     entity_id: int | None = None
     price: float
     side: Side
-
-    class Config:
-        orm_mode = True
-        from_attributes = True
-
 
 class OrderResponse(BaseModel):
     id: int
@@ -26,9 +21,7 @@ class OrderResponse(BaseModel):
     inventory: InventoryResponse | None = None
     created_at: datetime
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class OrderBuy(BaseModel):

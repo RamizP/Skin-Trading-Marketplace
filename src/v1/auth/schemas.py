@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, conint
+from pydantic import BaseModel, ConfigDict, EmailStr, conint
 
 
 class UserResponse(BaseModel):
@@ -15,9 +15,7 @@ class UserResponse(BaseModel):
     balance: int | None = 0
     created_at: datetime
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserCreate(BaseModel):

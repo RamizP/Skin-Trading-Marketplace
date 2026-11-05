@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import Exceptions
 import jwt
@@ -84,7 +84,7 @@ class JWTAuthStrategy(AuthStrategyInterface):
         if not user_id:
             raise HTTPException(status_code=400, detail="User ID is required")
 
-        expire = datetime.utcnow() + timedelta(minutes=self.token_duration)
+        expire = datetime.now(UTC) + timedelta(minutes=self.token_duration)
         payload = {"sub": str(user_id), "exp": expire}
         token = jwt.encode(payload, self._secret_key, algorithm=self._algorithm)
         return token

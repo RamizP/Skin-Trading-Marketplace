@@ -1,6 +1,6 @@
 from entity.schemas import EntityResponse
 from inventory.models import EntityWear
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class EntityData(BaseModel):
@@ -9,9 +9,7 @@ class EntityData(BaseModel):
     symbol: str
     image_url: str | None
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class InventoryResponse(BaseModel):
@@ -22,24 +20,13 @@ class InventoryResponse(BaseModel):
     entity: EntityResponse
     in_sale: bool
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class InventoryCharge(BaseModel):
     entity_id: int
     entity_wear: EntityWear
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
-
-
 class InventoryItem(BaseModel):
     entity_id: int
     entity_wear: EntityWear
-
-    class Config:
-        orm_mode = True
-        from_attributes = True

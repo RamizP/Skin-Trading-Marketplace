@@ -1,5 +1,5 @@
 from entity.models import EntityRarity
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class EntityResponse(BaseModel):
@@ -11,9 +11,7 @@ class EntityResponse(BaseModel):
     category_id: int | None = None
     sub_category_id: int | None = None
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EntityCreate(BaseModel):
@@ -24,18 +22,11 @@ class EntityCreate(BaseModel):
     category_id: int
     sub_category_id: int | None = None
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
-
-
 class CategoryResponce(BaseModel):
     id: int
     name: str
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SubCategoryResponce(BaseModel):
@@ -43,23 +34,12 @@ class SubCategoryResponce(BaseModel):
     name: str
     category_id: int
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CategoryCreate(BaseModel):
     name: str
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
-
-
 class SubCategoryCreate(BaseModel):
     name: str
     category_id: int
-
-    class Config:
-        orm_mode = True
-        from_attributes = True
