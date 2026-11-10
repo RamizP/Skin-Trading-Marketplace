@@ -1,43 +1,80 @@
-import { useState, useEffect } from "react";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
-import { getMe } from "./api/auth";
+import { useCallback, useEffect, useState } from "react";
+import { getMe, logoutUser } from "./api/auth";
+import { ApiError, clearToken } from "./api/client";
 import type { User } from "./api/types";
+import AuthDialog from "./components/AuthDialog";
+import Dashboard from "./pages/Dashboard";
+import { getErrorMessage } from "./utils/format";
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [showRegister, setShowRegister] = useState(false);
-
-  const refreshUser = async () => {
+  const [authMode, setAuthMode] = useState<"login" | "register" | null>(null);
+  const [restoring, setRestoring] = useState(true);
+  const [sessionMessage, setSessionMessage] = useState("");
+  useEffect(() => {
+    let active = true;
+    getMe()
+      .then((profile) => {
+        if (active) setUser(profile);
+      })
+      .catch((error) => {
+        if (active && !(error instanceof ApiError && error.status === 401))
+          setSessionMessage(getErrorMessage(error));
+      })
+      .finally(() => {
+        if (active) setRestoring(false);
+      });
+    const expired = () => {
+      setUser(null);
+      setSessionMessage("Your session has expired. Sign in to continue.");
+    };
+    window.addEventListener("exchange:session-expired", expired);
+    return () => {
+      active = false;
+      window.removeEventListener("exchange:session-expired", expired);
+    };
+  }, []);
+  const refreshUser = useCallback(async () => {
     try {
-      const profile = await getMe();
-      setUser(profile);
+      setUser(await getMe());
+    } catch (error) {
+      setSessionMessage(getErrorMessage(error));
+    }
+  }, []);
+  async function logout() {
+    try {
+      await logoutUser();
     } catch {
+      setSessionMessage(
+        "Signed out on this device. The server could not be reached.",
+      );
+    } finally {
+      clearToken();
       setUser(null);
     }
-  };
-
-  useEffect(() => {
-    refreshUser().finally(() => setLoading(false));
-  }, []);
-
-  const handleLogout = () => setUser(null);
-  const handleLogin = async () => {
-    setLoading(true);
-    await refreshUser();
-    setLoading(false);
-  };
-
-  if (loading) return <div className="app-loading fade-in">Loading Trading Engine...</div>;
-  if (!user) {
-    return showRegister ? (
-      <Register onRegistered={handleLogin} onLogin={() => setShowRegister(false)} />
-    ) : (
-      <Login onLogin={handleLogin} onRegister={() => setShowRegister(true)} />
-    );
   }
-
-  return <Dashboard user={user} onLogout={handleLogout} onUserUpdate={setUser} />;
+  return (
+    <>
+      <Dashboard
+        user={user}
+        restoring={restoring}
+        onAuth={(mode = "login") => setAuthMode(mode)}
+        onLogout={logout}
+        onRefreshUser={refreshUser}
+        sessionMessage={sessionMessage}
+        onDismissMessage={() => setSessionMessage("")}
+      />
+      {authMode && (
+        <AuthDialog
+          initialMode={authMode}
+          onClose={() => setAuthMode(null)}
+          onSuccess={(profile) => {
+            setUser(profile);
+            setAuthMode(null);
+            setSessionMessage("");
+          }}
+        />
+      )}
+    </>
+  );
 }

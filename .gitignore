@@ -35,3 +35,5 @@ logs/
 # Frontend dependencies and build output
 trading-engine-frontend/node_modules/
 trading-engine-frontend/dist/
+trading-engine-frontend/test-results/
+trading-engine-frontend/playwright-report/

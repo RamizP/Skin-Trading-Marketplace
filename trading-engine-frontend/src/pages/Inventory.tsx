@@ -1,146 +1,228 @@
-import { useEffect, useMemo, useState } from "react";
-import { getInventory } from "../api/inventory";
-import type { InventoryItem } from "../api/types";
-import { formatRarity } from "../utils/format";
-import "../styles/Inventory.css";
+import { useState } from "react";
+import type { Category, Entity, InventoryItem, User } from "../api/types";
+import { EmptyState, ErrorNotice, SkeletonCards } from "../components/Feedback";
+import Icon from "../components/Icon";
+import ItemArt from "../components/ItemArt";
+import {
+  categoryName,
+  formatRarity,
+  isCase,
+  rarityClass,
+} from "../utils/format";
 
-const saleFilters = [
-  { value: "all", label: "All" },
-  { value: "available", label: "Available" },
-  { value: "listed", label: "Listed" },
-];
-
-type InventoryProps = {
-  onOpenItem?: (selection: { entityId: number; inventoryItemId: number }) => void;
-};
-
-export default function InventoryTab({ onOpenItem }: InventoryProps) {
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [query, setQuery] = useState("");
-  const [saleFilter, setSaleFilter] = useState("all");
-
-  useEffect(() => {
-    getInventory()
-      .then(setInventory)
-      .catch(() => setError("Failed to load inventory"))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const filteredInventory = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    return inventory.filter((item) => {
-      const matchesQuery =
-        !normalizedQuery ||
-        item.entity.name.toLowerCase().includes(normalizedQuery) ||
-        (item.entity.symbol || "").toLowerCase().includes(normalizedQuery) ||
-        item.entity_wear.toLowerCase().includes(normalizedQuery);
-      const matchesSale =
-        saleFilter === "all" ||
-        (saleFilter === "listed" && item.in_sale) ||
-        (saleFilter === "available" && !item.in_sale);
-      return matchesQuery && matchesSale;
-    });
-  }, [inventory, query, saleFilter]);
-
-  const listedCount = inventory.filter((item) => item.in_sale).length;
-
-  if (loading) return <div className="inventory-loading">Loading inventory...</div>;
-  if (error) return <div className="inventory-error">{error}</div>;
-
+export default function Inventory({
+  user,
+  items,
+  categories,
+  loading,
+  error,
+  onRetry,
+  onAuth,
+  onOpen,
+  onAdd,
+  onMarket,
+}: {
+  user: User | null;
+  items: InventoryItem[];
+  categories: Category[];
+  loading: boolean;
+  error: string;
+  onRetry: () => void;
+  onAuth: () => void;
+  onOpen: (entity: Entity, inventoryId?: number) => void;
+  onAdd: () => void;
+  onMarket: () => void;
+}) {
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
+  if (!user)
+    return (
+      <EmptyState
+        title="Your collection starts here."
+        text="Sign in to see your items, manage listings, and open your cases."
+        icon="inventory"
+        action="Sign in"
+        onAction={onAuth}
+      />
+    );
+  const visible = items.filter(
+    (item) =>
+      `${item.entity.name} ${item.entity.symbol}`
+        .toLowerCase()
+        .includes(search.toLowerCase()) &&
+      (filter === "all" ||
+        (filter === "listed"
+          ? item.in_sale
+          : filter === "cases"
+            ? isCase(item.entity, categories)
+            : !item.in_sale)),
+  );
   return (
-    <section className="inventory-section fade-in">
-      <div className="section-header">
+    <section className="page-enter">
+      <div className="page-heading">
         <div>
-          <p className="eyebrow">Portfolio</p>
-          <h2>Your Inventory</h2>
-          <p className="muted">Manage owned skins by wear, rarity, and listing status.</p>
+          <span className="eyebrow">OWN YOUR NEXT MOVE</span>
+          <h1>
+            My inventory<span className="count-badge">{items.length}</span>
+          </h1>
+          <p>Your collection, ready for whatever comes next.</p>
         </div>
-        <div className="pill">{inventory.length} items</div>
+        <button className="button button-secondary" onClick={onAdd}>
+          <Icon name="plus" size={17} />
+          Get a test item
+        </button>
       </div>
-
-      <div className="inventory-summary">
+      <div className="stat-row">
         <div>
-          <span>Total Items</span>
-          <strong>{inventory.length}</strong>
+          <span>Total items</span>
+          <strong>{items.length.toString().padStart(2, "0")}</strong>
+          <Icon name="inventory" />
         </div>
         <div>
-          <span>Listed</span>
-          <strong>{listedCount}</strong>
+          <span>Available to trade</span>
+          <strong>
+            {items
+              .filter((item) => !item.in_sale)
+              .length.toString()
+              .padStart(2, "0")}
+          </strong>
+          <Icon name="bolt" />
         </div>
         <div>
-          <span>Ready To Sell</span>
-          <strong>{inventory.length - listedCount}</strong>
+          <span>Listed for sale</span>
+          <strong>
+            {items
+              .filter((item) => item.in_sale)
+              .length.toString()
+              .padStart(2, "0")}
+          </strong>
+          <Icon name="market" />
+        </div>
+        <div>
+          <span>Cases to discover</span>
+          <strong>
+            {items
+              .filter(
+                (item) => isCase(item.entity, categories) && !item.in_sale,
+              )
+              .length.toString()
+              .padStart(2, "0")}
+          </strong>
+          <Icon name="case" />
         </div>
       </div>
-
-      <div className="market-toolbar">
-        <label>
-          <span>Search inventory</span>
+      <div className="catalog-toolbar">
+        <label className="search-field">
+          <Icon name="search" size={18} />
           <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Name, symbol, wear..."
+            aria-label="Search inventory"
+            placeholder="Find something in your collection…"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
           />
         </label>
-        <div className="segmented-control" role="group" aria-label="Sale status filter">
-          {saleFilters.map((filter) => (
-            <button
-              key={filter.value}
-              className={saleFilter === filter.value ? "active" : ""}
-              type="button"
-              onClick={() => setSaleFilter(filter.value)}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
+        <button
+          className="button button-secondary"
+          onClick={onRetry}
+          disabled={loading}
+        >
+          <Icon name="refresh" size={16} />
+          Refresh
+        </button>
       </div>
-
-      {!filteredInventory.length ? (
-        <div className="inventory-empty">No inventory items match the current filters.</div>
-      ) : (
-        <div className="inventory-table" role="table" aria-label="Inventory items">
-          <div className="inventory-table-head" role="row">
-            <span>Item</span>
-            <span>Rarity</span>
-            <span>Wear</span>
-            <span>Status</span>
-          </div>
-          {filteredInventory.map((item, index) => (
+      <div
+        className="category-tabs"
+        role="group"
+        aria-label="Inventory filters"
+      >
+        {[
+          ["all", "All items"],
+          ["available", "Available"],
+          ["listed", "Listed for sale"],
+          ["cases", "Cases"],
+        ].map(([value, label]) => (
+          <button
+            className={filter === value ? "active" : ""}
+            key={value}
+            onClick={() => setFilter(value)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {error ? (
+        <ErrorNotice message={error} onRetry={onRetry} />
+      ) : loading ? (
+        <SkeletonCards />
+      ) : visible.length ? (
+        <div className="item-grid inventory-grid">
+          {visible.map((item) => (
             <button
               key={item.id}
-              className={`inventory-row ${item.in_sale ? "listed" : ""}`}
-              role="row"
-              type="button"
-              style={{ animationDelay: `${index * 35}ms` }}
-              onClick={() =>
-                onOpenItem?.({ entityId: item.entity_id, inventoryItemId: item.id })
-              }
+              className={`item-card ${rarityClass(item.entity)}`}
+              onClick={() => onOpen(item.entity, item.id)}
+              aria-label={`Manage ${item.entity.name}`}
             >
-              <div className="inventory-item-cell">
-                <div className="inventory-thumb">
-                  {item.entity.image_url ? (
-                    <img src={item.entity.image_url} alt={item.entity.name} />
-                  ) : (
-                    <span>{item.entity.symbol || "TE"}</span>
-                  )}
-                </div>
-                <div>
-                  <strong>{item.entity.name}</strong>
-                  <small>{item.entity.symbol || "No symbol"}</small>
+              <div className="item-card-top">
+                <span>{categoryName(item.entity, categories)}</span>
+                <span className={`item-state ${item.in_sale ? "listed" : ""}`}>
+                  {item.in_sale ? "Listed" : "Available"}
+                </span>
+              </div>
+              <div className="card-art">
+                <ItemArt
+                  entity={item.entity}
+                  caseItem={isCase(item.entity, categories)}
+                />
+              </div>
+              <div className="item-card-copy">
+                <span className="item-symbol">{item.entity.symbol}</span>
+                <h3>{item.entity.name}</h3>
+                <span className="item-rarity">
+                  <span className="rarity-dot" />
+                  {formatRarity(item.entity.entity_rarity)}
+                </span>
+                <div className="item-card-footer">
+                  <span className="wear-label">
+                    {item.entity_wear === "NONE"
+                      ? isCase(item.entity, categories)
+                        ? "Unopened case"
+                        : "No wear"
+                      : item.entity_wear}
+                  </span>
+                  <span className="inventory-action">
+                    {item.in_sale
+                      ? "Manage"
+                      : isCase(item.entity, categories)
+                        ? "Open case"
+                        : "Sell item"}
+                    <Icon name="arrow" size={15} />
+                  </span>
                 </div>
               </div>
-              <span>{formatRarity(item.entity.entity_rarity)}</span>
-              <span>{item.entity_wear}</span>
-              <strong className={item.in_sale ? "status-listed" : "status-ready"}>
-                {item.in_sale ? "Listed" : "Ready"}
-              </strong>
             </button>
           ))}
         </div>
+      ) : (
+        <EmptyState
+          title={
+            items.length ? "No items match." : "A collection waiting to happen."
+          }
+          text={
+            items.length
+              ? "Choose another filter or search for a different item."
+              : "Pick up your first collectible on the market, or add a test item to explore trading."
+          }
+          action={items.length ? "Clear filters" : "Browse marketplace"}
+          onAction={
+            items.length
+              ? () => {
+                  setFilter("all");
+                  setSearch("");
+                }
+              : onMarket
+          }
+        />
       )}
     </section>
   );

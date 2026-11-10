@@ -1,24 +1,10 @@
-import { API_URL } from "./client";
+import { emptyOn404, request } from "./client";
 import type { InventoryItem } from "./types";
 
-type ApiError = {
-  detail?: string;
-};
-
-export async function getInventory(): Promise<InventoryItem[]> {
-  const res = await fetch(`${API_URL}/inventory/me`, {
-    method: "GET",
-    credentials: "include", // important for your auth cookie
+export const getInventory = () =>
+  emptyOn404(() => request<InventoryItem[]>("/inventory/me"));
+export const chargeInventory = (entityId: number, wear: string) =>
+  request<InventoryItem[]>("/inventory/me/charge", {
+    method: "POST",
+    body: JSON.stringify({ entity_id: entityId, entity_wear: wear }),
   });
-
-  if (!res.ok) {
-    const err = (await res.json()) as ApiError;
-    const message = err.detail || "Failed to fetch inventory";
-    if (message.toLowerCase().includes("inventory not found")) {
-      return [];
-    }
-    throw new Error(message);
-  }
-
-  return res.json() as Promise<InventoryItem[]>;
-}

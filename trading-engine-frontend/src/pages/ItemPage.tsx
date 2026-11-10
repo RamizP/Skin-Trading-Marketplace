@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
-import { getMe } from "../api/auth";
-import { getEntity } from "../api/entities";
-import { getInventory } from "../api/inventory";
+import { useCallback, useState } from "react";
+import type { FormEvent } from "react";
+import { getCaseDrops, openCase } from "../api/cases";
 import {
   buyOrder,
   createOrder,
@@ -10,453 +9,586 @@ import {
   getMyBuyOrdersByEntity,
   getOrdersByEntity,
 } from "../api/orders";
-import type { Entity, InventoryItem, Order, User } from "../api/types";
-import { formatCurrency, formatRarity, getErrorMessage } from "../utils/format";
-import "../styles/ItemPage.css";
-
-type ItemPageProps = {
-  entityId: number;
-  inventoryItemId?: number;
-  user: User;
-  onBack: () => void;
-  onUserUpdate?: (user: User) => void;
-};
-
-type StatusMessage = {
-  type: "success" | "error";
-  text: string;
-};
-
-const rarityClass = (rarity?: string | null) =>
-  `rarity-${(rarity || "common").replace(/_/g, "-")}`;
+import type {
+  CaseDrop,
+  CaseReward,
+  Category,
+  Entity,
+  InventoryItem,
+  Order,
+  User,
+} from "../api/types";
+import { EmptyState, ErrorNotice } from "../components/Feedback";
+import Icon from "../components/Icon";
+import ItemArt from "../components/ItemArt";
+import Modal from "../components/Modal";
+import useQuery from "../hooks/useQuery";
+import {
+  categoryName,
+  formatCurrency,
+  formatRarity,
+  getErrorMessage,
+  isCase,
+  moneyInput,
+  rarityClass,
+} from "../utils/format";
 
 export default function ItemPage({
-  entityId,
+  entity,
   inventoryItemId,
+  catalog,
+  categories,
+  inventory,
   user,
-  onBack,
-  onUserUpdate,
-}: ItemPageProps) {
-  const [entity, setEntity] = useState<Entity | null>(null);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [myBuyOrders, setMyBuyOrders] = useState<Order[]>([]);
-  const [highestBuyOrder, setHighestBuyOrder] = useState<Order | null>(null);
-  const [selectedInventoryId, setSelectedInventoryId] = useState<number | "">(
-    inventoryItemId ?? "",
+  onClose,
+  onAuth,
+  onChanged,
+}: {
+  entity: Entity;
+  inventoryItemId?: number;
+  catalog: Entity[];
+  categories: Category[];
+  inventory: InventoryItem[];
+  user: User | null;
+  onClose: () => void;
+  onAuth: () => void;
+  onChanged: (message?: string) => Promise<void>;
+}) {
+  const caseItem = isCase(entity, categories);
+  const userId = user?.id;
+  const fetcher = useCallback(async () => {
+    const [orders, highestBid, drops, myBuyOrders] = await Promise.all([
+      getOrdersByEntity(entity.id),
+      getHighestBuyOrdersByEntity(entity.id),
+      caseItem ? getCaseDrops(entity.id) : Promise.resolve([] as CaseDrop[]),
+      userId
+        ? getMyBuyOrdersByEntity(entity.id)
+        : Promise.resolve([] as Order[]),
+    ]);
+    return { orders, highestBid, drops, myBuyOrders };
+  }, [entity.id, caseItem, userId]);
+  const query = useQuery(fetcher, {
+    orders: [],
+    highestBid: null as Order | null,
+    drops: [],
+    myBuyOrders: [],
+  });
+  const [mode, setMode] = useState<"buy" | "sell">(
+    inventoryItemId ? "sell" : "buy",
   );
-  const [sellPrice, setSellPrice] = useState("");
-  const [buyOrderPrice, setBuyOrderPrice] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [pendingOrderId, setPendingOrderId] = useState<number | null>(null);
-  const [status, setStatus] = useState<StatusMessage | null>(null);
-
-  const ownedCopies = useMemo(
-    () => inventory.filter((item) => item.entity_id === entityId),
-    [inventory, entityId],
+  const [price, setPrice] = useState("");
+  const [selectedId, setSelectedId] = useState(inventoryItemId || 0);
+  const [pending, setPending] = useState("");
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [confirmation, setConfirmation] = useState<Order | null>(null);
+  const [cancelId, setCancelId] = useState<number | null>(null);
+  const [reward, setReward] = useState<CaseReward | null>(null);
+  const available = inventory.filter(
+    (item) => item.entity_id === entity.id && !item.in_sale,
   );
+  const chosenItem =
+    available.find((item) => item.id === selectedId) || available[0];
+  const { orders, highestBid, drops, myBuyOrders } = query.data;
+  const lowestAsk = orders.length
+    ? orders.reduce((best, order) =>
+        Number(order.price) < Number(best.price) ? order : best,
+      )
+    : null;
+  const rewardEntity = reward
+    ? catalog.find((item) => item.id === reward.entity_id)
+    : undefined;
+  const totalWeight = drops.reduce((total, drop) => total + drop.weight, 0);
 
-  const sellableCopies = useMemo(
-    () => ownedCopies.filter((item) => !item.in_sale),
-    [ownedCopies],
-  );
-
-  const selectedInventory = useMemo(
-    () => sellableCopies.find((item) => item.id === Number(selectedInventoryId)),
-    [sellableCopies, selectedInventoryId],
-  );
-
-  const lowestAsk = orders[0] ?? null;
-  const ownListedCount = ownedCopies.filter((item) => item.in_sale).length;
-
-  const loadPage = async () => {
-    setLoading(true);
-    setStatus(null);
+  async function perform(
+    key: string,
+    operation: () => Promise<unknown>,
+    message: string,
+  ) {
+    if (pending) return;
+    setPending(key);
+    setError("");
+    setNotice("");
     try {
-      const [entityData, inventoryData, orderData, buyOrderData, highestOrderData] = await Promise.all([
-        getEntity(entityId),
-        getInventory().catch(() => []),
-        getOrdersByEntity(entityId).catch((err) => {
-          const message = getErrorMessage(err, "");
-          if (message.toLowerCase().includes("no orders")) return [];
-          throw err;
-        }),
-        getMyBuyOrdersByEntity(entityId).catch((err) => {
-          const message = getErrorMessage(err, "");
-          if (message.toLowerCase().includes("no orders")) return [];
-          throw err;
-        }),
-        getHighestBuyOrdersByEntity(entityId).catch((err) => {
-          const message = getErrorMessage(err, "");
-          if (message.toLowerCase().includes("no orders")) return null;
-          throw err;
-        }),
-      ]);
-      setEntity(entityData);
-      setInventory(inventoryData);
-      setOrders(orderData);
-      setMyBuyOrders(buyOrderData);
-      setHighestBuyOrder(highestOrderData);
-      const preferredCopy = inventoryData.find((item) => item.id === inventoryItemId);
-      const firstSellable = inventoryData.find(
-        (item) => item.entity_id === entityId && !item.in_sale,
-      );
-      setSelectedInventoryId(
-        preferredCopy && !preferredCopy.in_sale
-          ? preferredCopy.id
-          : firstSellable?.id ?? "",
-      );
-    } catch (err) {
-      setStatus({ type: "error", text: getErrorMessage(err, "Failed to load item") });
+      await operation();
+      setConfirmation(null);
+      setCancelId(null);
+      setNotice(message);
+      query.reload();
+      await onChanged(message);
+    } catch (reason) {
+      setError(getErrorMessage(reason));
     } finally {
-      setLoading(false);
+      setPending("");
     }
-  };
-
-  const refreshUser = async () => {
-    if (!onUserUpdate) return;
-    try {
-      onUserUpdate(await getMe());
-    } catch {
-      // Keep the current balance if the action succeeded but the profile refresh failed.
-    }
-  };
-
-  useEffect(() => {
-    void loadPage();
-  }, [entityId, inventoryItemId]);
-
-  const handleSell = async () => {
-    const price = Number(sellPrice);
-    if (!selectedInventory || !Number.isFinite(price) || price <= 0) {
-      setStatus({ type: "error", text: "Pick a sellable copy and enter a valid price." });
-      return;
-    }
-
-    setActionLoading(true);
-    setStatus(null);
-    try {
-      await createOrder({
-        side: "sell",
-        price,
-        entity_id: selectedInventory.entity_id,
-        entity_in_inventory_id: selectedInventory.id,
-      });
-      setSellPrice("");
-      await loadPage();
-      await refreshUser();
-      setStatus({ type: "success", text: "Your copy is now listed for sale." });
-    } catch (err) {
-      setStatus({ type: "error", text: getErrorMessage(err, "Failed to list item") });
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleBuyOrder = async () => {
-    const price = Number(buyOrderPrice);
-    if (!Number.isFinite(price) || price <= 0) {
-      setStatus({ type: "error", text: "Enter a valid buy order price." });
-      return;
-    }
-
-    setActionLoading(true);
-    setStatus(null);
-    try {
-      await createOrder({ side: "buy", price, entity_id: entityId });
-      setBuyOrderPrice("");
-      await loadPage();
-      await refreshUser();
-      setStatus({ type: "success", text: "Buy order placed for this item." });
-    } catch (err) {
-      setStatus({ type: "error", text: getErrorMessage(err, "Failed to place buy order") });
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleInstantBuy = async (orderId: number) => {
-    setPendingOrderId(orderId);
-    setStatus(null);
-    try {
-      await buyOrder(orderId);
-      await loadPage();
-      await refreshUser();
-      setStatus({ type: "success", text: "Item bought and moved to your inventory." });
-    } catch (err) {
-      setStatus({ type: "error", text: getErrorMessage(err, "Failed to buy item") });
-    } finally {
-      setPendingOrderId(null);
-    }
-  };
-
-  const handleCancelOrder = async (orderId: number) => {
-    setPendingOrderId(orderId);
-    setStatus(null);
-    try {
-      await deleteOrder(orderId);
-      await loadPage();
-      setStatus({ type: "success", text: "Order cancelled." });
-    } catch (err) {
-      setStatus({ type: "error", text: getErrorMessage(err, "Failed to cancel order") });
-    } finally {
-      setPendingOrderId(null);
-    }
-  };
-
-  if (loading) {
-    return <div className="item-loading">Loading item...</div>;
   }
-
-  if (!entity) {
-    return (
-      <section className="item-empty">
-        <button className="btn btn-outline" type="button" onClick={onBack}>
-          Back
-        </button>
-        <p>{status?.text || "Item could not be loaded."}</p>
-      </section>
+  async function submitOrder(event: FormEvent) {
+    event.preventDefault();
+    if (!user) {
+      onAuth();
+      return;
+    }
+    let validPrice: string;
+    try {
+      validPrice = moneyInput(price);
+    } catch (reason) {
+      setError(getErrorMessage(reason));
+      return;
+    }
+    if (mode === "sell" && !chosenItem) {
+      setError("Choose an available item from your inventory.");
+      return;
+    }
+    await perform(
+      "order",
+      () =>
+        createOrder({
+          entity_id: entity.id,
+          price: validPrice,
+          side: mode,
+          ...(mode === "sell" ? { entity_in_inventory_id: chosenItem.id } : {}),
+        }),
+      mode === "sell"
+        ? "Listing submitted. If matched, your item has already traded."
+        : "Buy order submitted. Check My orders for open bids.",
     );
   }
-
+  async function reveal() {
+    if (!user) {
+      onAuth();
+      return;
+    }
+    if (!chosenItem || pending) return;
+    const id = chosenItem.id;
+    await perform(
+      "open",
+      async () => {
+        setReward(await openCase(id));
+      },
+      "Case opened. Your reward is now in your inventory.",
+    );
+  }
   return (
-    <section className="item-page fade-in">
-      <button className="btn btn-outline item-back" type="button" onClick={onBack}>
-        Back
-      </button>
-
-      <div className="item-hero">
-        <div className={`item-art ${rarityClass(entity.entity_rarity)}`}>
-          {entity.image_url ? (
-            <img src={entity.image_url} alt={entity.name} />
-          ) : (
-            <span>{entity.symbol || "TE"}</span>
-          )}
-        </div>
-
-        <div className="item-summary">
-          <p className="eyebrow">Item Market</p>
+    <Modal title="Item details" onClose={onClose} wide busy={Boolean(pending)}>
+      <div className="detail-layout">
+        <section className={`detail-art-panel ${rarityClass(entity)}`}>
+          <div className="detail-category">
+            <span>{categoryName(entity, categories)}</span>
+            <span>#{entity.id.toString().padStart(4, "0")}</span>
+          </div>
+          <div className="detail-art">
+            <ItemArt entity={entity} caseItem={caseItem} />
+          </div>
+          <span className="item-symbol">{entity.symbol}</span>
           <h2>{entity.name}</h2>
-          <div className="item-tags">
-            <span>{formatRarity(entity.entity_rarity)}</span>
-            <span>{entity.symbol || "No symbol"}</span>
-            <span>{ownedCopies.length} owned</span>
-          </div>
-          <div className="item-stats">
+          <span className="item-rarity">
+            <span className="rarity-dot" />
+            {formatRarity(entity.entity_rarity)}
+          </span>
+          <div className="detail-price-grid">
             <div>
-              <span>Lowest Ask</span>
-              <strong>{lowestAsk ? formatCurrency(lowestAsk.price) : "No asks"}</strong>
+              <span>Lowest ask</span>
+              <strong>
+                {lowestAsk ? formatCurrency(lowestAsk.price) : "—"}
+              </strong>
             </div>
             <div>
-              <span>Your Copies</span>
-              <strong>{ownedCopies.length}</strong>
-            </div>
-            <div>
-              <span>Listed By You</span>
-              <strong>{ownListedCount}</strong>
+              <span>Highest bid</span>
+              <strong>
+                {highestBid ? formatCurrency(highestBid.price) : "—"}
+              </strong>
             </div>
           </div>
-        </div>
-      </div>
-
-      {status && <div className={`status ${status.type}`}>{status.text}</div>}
-
-      <div className="item-actions">
-        <div className="action-panel instant-buy">
-          <div>
-            <p className="eyebrow">Buy Now</p>
-            <h3>{lowestAsk ? formatCurrency(lowestAsk.price) : "No active asks"}</h3>
-            <p className="muted">
-              {lowestAsk
-                ? "Buy the cheapest current sell listing immediately."
-                : "No seller has listed this item yet."}
-            </p>
-          </div>
-          <button
-            className="btn"
-            type="button"
-            disabled={!lowestAsk || lowestAsk.user_id === user.id || pendingOrderId === lowestAsk?.id}
-            onClick={() => lowestAsk && handleInstantBuy(lowestAsk.id)}
-          >
-            {pendingOrderId === lowestAsk?.id ? "Buying" : "Buy Cheapest"}
-          </button>
-        </div>
-
-        <div className="action-panel">
-          <div>
-            <p className="eyebrow">Sell</p>
-            <h3>List Your Copy</h3>
-          </div>
-          <label>
-            <span>Copy</span>
-            <select
-              value={selectedInventoryId}
-              onChange={(event) => setSelectedInventoryId(Number(event.target.value))}
-              disabled={!sellableCopies.length || actionLoading}
-            >
-              {sellableCopies.map((item) => (
-                <option key={item.id} value={item.id}>
-                  #{item.id} - Wear {item.entity_wear}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>Ask Price</span>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={sellPrice}
-              onChange={(event) => setSellPrice(event.target.value)}
-              placeholder="0.00"
-            />
-          </label>
-          <button
-            className="btn"
-            type="button"
-            disabled={!sellableCopies.length || actionLoading}
-            onClick={handleSell}
-          >
-            {actionLoading ? "Working" : "List For Sale"}
-          </button>
-          {!sellableCopies.length && <p className="helper">No unlisted copy available.</p>}
-        </div>
-
-        <div className="action-panel">
-          <div>
-            <p className="eyebrow">Buy Order</p>
-            <h3>Set Your Bid</h3>
-          </div>
-          <label>
-            <span>Bid Price</span>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={buyOrderPrice}
-              onChange={(event) => setBuyOrderPrice(event.target.value)}
-              placeholder="0.00"
-            />
-          </label>
-          <button
-            className="btn btn-ghost"
-            type="button"
-            disabled={actionLoading}
-            onClick={handleBuyOrder}
-          >
-            {actionLoading ? "Working" : "Place Buy Order"}
-          </button>
-        </div>
-      </div>
-
-      <div className="asks-panel">
-        <div className="section-header">
-          <div>
-            <p className="eyebrow">Sell Listings</p>
-            <h2>Current Asks</h2>
-            <p className="muted">Sorted from cheapest to most expensive.</p>
-          </div>
-          <div className="pill">{orders.length} asks</div>
-        </div>
-
-        <div className="asks-list">
-          {orders.length === 0 && <p className="helper">No active sell listings.</p>}
-          {orders.map((order) => (
-            <div className="ask-row" key={order.id}>
+          <p className="detail-caption">
+            {available.length
+              ? `${available.length} available in your inventory`
+              : "Make it part of your collection."}
+          </p>
+        </section>
+        <section className="detail-actions">
+          {error && <ErrorNotice message={error} />}
+          {notice && (
+            <div className="success-notice" role="status">
+              <Icon name="check" size={17} />
+              {notice}
+            </div>
+          )}
+          {query.error && (
+            <ErrorNotice message={query.error} onRetry={query.reload} />
+          )}
+          {caseItem && (
+            <div className="case-open-panel">
               <div>
-                <strong>{order.inventory?.entity_wear || "Unknown wear"}</strong>
-                <small>Listing #{order.id}</small>
+                <span className="eyebrow">A NEW DISCOVERY</span>
+                <h3>What’s inside yours?</h3>
+                <p>
+                  Opening consumes one case and adds a reward to your inventory.
+                </p>
               </div>
-              <div>
-                <span>Seller</span>
-                <strong>{order.user_id === user.id ? "You" : `User #${order.user_id}`}</strong>
-              </div>
-              <div>
-                <span>Ask</span>
-                <strong>{formatCurrency(order.price)}</strong>
-              </div>
-              {order.user_id === user.id ? (
-                <button
-                  className="btn btn-outline"
-                  type="button"
-                  disabled={pendingOrderId === order.id}
-                  onClick={() => handleCancelOrder(order.id)}
+              {reward && (
+                <div
+                  className={`reward-reveal ${rewardEntity ? rarityClass(rewardEntity) : ""}`}
+                  role="status"
                 >
-                  {pendingOrderId === order.id ? "Cancelling" : "Cancel"}
-                </button>
-              ) : (
-                <button
-                  className="btn"
-                  type="button"
-                  disabled={pendingOrderId === order.id}
-                  onClick={() => handleInstantBuy(order.id)}
-                >
-                  {pendingOrderId === order.id ? "Buying" : "Buy"}
-                </button>
+                  <span className="eyebrow">YOU UNBOXED</span>
+                  <ItemArt entity={rewardEntity} />
+                  <h3>{rewardEntity?.name || `Item #${reward.entity_id}`}</h3>
+                  <p>{reward.entity_wear}</p>
+                </div>
               )}
+              {user && available.length > 1 && (
+                <label className="compact-label">
+                  Your case
+                  <select
+                    aria-label="Case to open"
+                    value={chosenItem?.id}
+                    onChange={(event) =>
+                      setSelectedId(Number(event.target.value))
+                    }
+                  >
+                    {available.map((item) => (
+                      <option value={item.id} key={item.id}>
+                        Inventory item #{item.id}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <button
+                className="button button-primary button-full"
+                disabled={
+                  Boolean(pending) ||
+                  (Boolean(user) &&
+                    (!chosenItem ||
+                      !drops.length ||
+                      query.loading ||
+                      Boolean(query.error)))
+                }
+                onClick={user ? reveal : onAuth}
+              >
+                <Icon name="case" size={17} />
+                {pending === "open"
+                  ? "Opening your case…"
+                  : !user
+                    ? "Sign in to open a case"
+                    : !chosenItem
+                      ? "No available case in inventory"
+                      : !drops.length
+                        ? "This case has no rewards yet"
+                        : "Open one case"}
+              </button>
             </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="buy-orders-panel">
-        <div className="section-header">
-          <div>
-            <p className="eyebrow">Buy Orders</p>
-            <h2>Open Bids</h2>
-            <p className="muted">Cancel bids that have not matched a seller yet.</p>
+          )}
+          <div className="trade-tabs" role="group" aria-label="Order type">
+            <button
+              className={mode === "buy" ? "active" : ""}
+              disabled={Boolean(pending)}
+              onClick={() => setMode("buy")}
+            >
+              Buy order
+            </button>
+            <button
+              className={mode === "sell" ? "active" : ""}
+              disabled={Boolean(pending)}
+              onClick={() => setMode("sell")}
+            >
+              Sell an item
+            </button>
           </div>
-          <div className="pill">{myBuyOrders.length} bids</div>
+          <form className="stack-form order-form" onSubmit={submitOrder}>
+            <p className="small-muted">
+              {mode === "buy"
+                ? "Set your limit price. A matching sell listing may fill your order immediately."
+                : "List an item from your inventory. A matching buy order may fill it immediately."}
+            </p>
+            {mode === "sell" && (
+              <label>
+                Inventory item
+                <select
+                  aria-label="Item to sell"
+                  value={chosenItem?.id || ""}
+                  onChange={(event) =>
+                    setSelectedId(Number(event.target.value))
+                  }
+                  disabled={!available.length}
+                >
+                  <option value="" disabled>
+                    {available.length ? "Choose an item" : "No available items"}
+                  </option>
+                  {available.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      #{item.id} ·{" "}
+                      {item.entity_wear === "NONE"
+                        ? caseItem
+                          ? "Unopened case"
+                          : "No wear"
+                        : item.entity_wear}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <div className="order-input-row">
+              <label>
+                Price (test USD)
+                <input
+                  aria-label="Order price"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  required
+                  value={price}
+                  onChange={(event) => setPrice(event.target.value)}
+                  placeholder="0.00"
+                />
+              </label>
+              <button
+                className="button button-primary"
+                disabled={
+                  Boolean(pending) ||
+                  (Boolean(user) && mode === "sell" && !chosenItem)
+                }
+              >
+                {pending === "order"
+                  ? "Submitting…"
+                  : mode === "buy"
+                    ? "Place buy order"
+                    : "List for sale"}
+                <Icon name="arrow" size={16} />
+              </button>
+            </div>
+          </form>
+          {user && (
+            <section className="item-buy-orders" aria-label="Your buy orders">
+              <div className="section-heading compact">
+                <h3>
+                  Your buy orders
+                  <span className="count-badge">{myBuyOrders.length}</span>
+                </h3>
+              </div>
+              {query.loading ? (
+                <p className="small-muted" role="status">
+                  Loading your buy orders…
+                </p>
+              ) : query.error ? (
+                <p className="small-muted">
+                  Buy orders could not be loaded. Try refreshing the item
+                  details.
+                </p>
+              ) : myBuyOrders.length === 0 ? (
+                <p className="small-muted">No open buy orders for this item.</p>
+              ) : (
+                myBuyOrders.map((order) => (
+                  <div className="item-bid-row" key={order.id}>
+                    <div>
+                      <strong>{formatCurrency(order.price)}</strong>
+                      <span>Buy order #{order.id}</span>
+                    </div>
+                    {cancelId === order.id ? (
+                      <div className="item-bid-confirmation">
+                        <span>Cancel this buy order?</span>
+                        <div>
+                          <button
+                            className="button button-secondary button-small"
+                            disabled={Boolean(pending)}
+                            onClick={() => setCancelId(null)}
+                          >
+                            Keep buy order
+                          </button>
+                          <button
+                            className="button button-danger button-small"
+                            disabled={Boolean(pending)}
+                            onClick={() =>
+                              perform(
+                                `cancel-bid-${order.id}`,
+                                () => deleteOrder(order.id),
+                                "Buy order cancelled.",
+                              )
+                            }
+                          >
+                            {pending === `cancel-bid-${order.id}`
+                              ? "Cancelling…"
+                              : "Confirm cancellation"}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        className="button button-secondary button-small"
+                        disabled={Boolean(pending)}
+                        onClick={() => setCancelId(order.id)}
+                      >
+                        Cancel buy order
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </section>
+          )}
+        </section>
+      </div>
+      <section className="order-book">
+        <div className="section-heading compact">
+          <div>
+            <span className="eyebrow">ON THE EXCHANGE</span>
+            <h3>
+              Available listings
+              <span className="count-badge">{orders.length}</span>
+            </h3>
+          </div>
+          <button
+            className="icon-button"
+            aria-label="Refresh listings"
+            onClick={query.reload}
+            disabled={query.loading || Boolean(pending)}
+          >
+            <Icon name="refresh" size={17} />
+          </button>
         </div>
-        <p className="eyebrow">Highest Bid</p>
-        {highestBuyOrder !== null && (
-          <div className="ask-row buy-order-row" key={highestBuyOrder.id}>
+        {query.loading ? (
+          <div className="table-loading" role="status">
+            <span className="spinner" />
+            Loading listings…
+          </div>
+        ) : !orders.length ? (
+          <EmptyState
+            title="Be the first to make a move."
+            text="No sell listings yet. Place a buy order or list your own item."
+            icon="orders"
+          />
+        ) : (
+          <div className="book-list">
+            {orders.map((order) => (
+              <div className="book-row" key={order.id}>
+                <div>
+                  <strong>
+                    {order.inventory?.entity_wear === "NONE"
+                      ? caseItem
+                        ? "Unopened case"
+                        : "No wear"
+                      : order.inventory?.entity_wear || "Collectible"}
+                  </strong>
+                  <small>
+                    Listing #{order.id}
+                    {order.user_id === user?.id ? " · Your listing" : ""}
+                  </small>
+                </div>
+                <strong className="mono">{formatCurrency(order.price)}</strong>
+                {order.user_id === user?.id ? (
+                  cancelId === order.id ? (
+                    <button
+                      className="button button-danger button-small"
+                      disabled={Boolean(pending)}
+                      onClick={() =>
+                        perform(
+                          `cancel-${order.id}`,
+                          () => deleteOrder(order.id),
+                          "Listing cancelled.",
+                        )
+                      }
+                    >
+                      {pending ? "Cancelling…" : "Confirm cancel"}
+                    </button>
+                  ) : (
+                    <button
+                      className="button button-secondary button-small"
+                      disabled={Boolean(pending)}
+                      onClick={() => setCancelId(order.id)}
+                    >
+                      Cancel listing
+                    </button>
+                  )
+                ) : (
+                  <button
+                    className="button button-secondary button-small"
+                    disabled={Boolean(pending)}
+                    onClick={() => (user ? setConfirmation(order) : onAuth())}
+                  >
+                    Buy item
+                    <Icon name="arrow" size={14} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {confirmation && (
+          <div className="purchase-confirmation">
             <div>
-              <strong>{entity.name}</strong>
-              <small>Buy order #{highestBuyOrder.id}</small>
+              <strong>
+                Buy {entity.name} for {formatCurrency(confirmation.price)}?
+              </strong>
+              <p>
+                {user && Number(user.balance) < Number(confirmation.price)
+                  ? "Not enough test funds. Add funds using your wallet, then try again."
+                  : "The item will move to your inventory and the price will be deducted from your wallet."}
+              </p>
             </div>
             <div>
-              <span>Side</span>
-              <strong>Buy</strong>
-            </div>
-            <div>
-              <span>Bid</span>
-              <strong>{formatCurrency(highestBuyOrder.price)}</strong>
+              <button
+                className="button button-secondary button-small"
+                disabled={Boolean(pending)}
+                onClick={() => setConfirmation(null)}
+              >
+                Go back
+              </button>
+              <button
+                className="button button-primary button-small"
+                disabled={
+                  Boolean(pending) ||
+                  !user ||
+                  Number(user.balance) < Number(confirmation.price)
+                }
+                onClick={() =>
+                  perform(
+                    `buy-${confirmation.id}`,
+                    () => buyOrder(confirmation.id),
+                    "Purchase complete. Your new item is in your inventory.",
+                  )
+                }
+              >
+                {pending.startsWith("buy-") ? "Buying…" : "Confirm purchase"}
+              </button>
             </div>
           </div>
         )}
-
-        <p className="eyebrow">Your Bids</p>
-        <div className="asks-list">
-          {myBuyOrders.length === 0 && <p className="helper">No open buy orders for this item.</p>}
-          {myBuyOrders.map((order) => (
-            <div className="ask-row buy-order-row" key={order.id}>
-              <div>
-                <strong>{entity.name}</strong>
-                <small>Buy order #{order.id}</small>
-              </div>
-              <div>
-                <span>Side</span>
-                <strong>Buy</strong>
-              </div>
-              <div>
-                <span>Bid</span>
-                <strong>{formatCurrency(order.price)}</strong>
-              </div>
-              <button
-                className="btn btn-outline"
-                type="button"
-                disabled={pendingOrderId === order.id}
-                onClick={() => handleCancelOrder(order.id)}
-              >
-                {pendingOrderId === order.id ? "Cancelling" : "Cancel"}
-              </button>
+      </section>
+      {caseItem && (
+        <section className="case-contents">
+          <div className="section-heading compact">
+            <div>
+              <span className="eyebrow">THE POSSIBILITIES</span>
+              <h3>Inside this case</h3>
             </div>
-          ))}
-        </div>
-      </div>
-    </section>
+            <span className="small-muted">
+              Chances calculated from API weights
+            </span>
+          </div>
+          {drops.length ? (
+            <div className="drop-grid">
+              {drops.map((drop) => (
+                <div
+                  className={`drop-item ${rarityClass(drop.entity)}`}
+                  key={drop.id}
+                >
+                  <ItemArt entity={drop.entity} />
+                  <strong>{drop.entity.name}</strong>
+                  <span>
+                    {totalWeight > 0
+                      ? `${((drop.weight / totalWeight) * 100).toLocaleString("en-US", { maximumFractionDigits: 2 })}% chance`
+                      : "Unavailable"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="small-muted">
+              No rewards have been configured for this case.
+            </p>
+          )}
+        </section>
+      )}
+    </Modal>
   );
 }
