@@ -2,6 +2,7 @@ from typing import Annotated
 
 from entity.schemas import EntityResponse
 from pydantic import BaseModel, ConfigDict, Field
+from datetime import datetime
 
 
 class CaseDropResponse(BaseModel):
@@ -21,3 +22,6 @@ class CaseDropAdd(BaseModel):
     case_entity_id: int
     reward_entity_id: int
     weight: Annotated[int, Field(gt=0)]
+
+class FreeCaseCooldownInitialize(BaseModel):
+    user_id: int

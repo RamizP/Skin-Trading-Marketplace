@@ -1,12 +1,15 @@
 import random
 
 from auth.schemas import UserResponse
-from case.models import CaseDrop
-from entity.models import Entity
+from case.models import CaseDrop, FreeCaseCooldown
+from case.schemas import FreeCaseCooldownInitialize
+from entity.models import Entity, Category
 from fastapi import HTTPException
 from inventory.models import EntityWear
 from inventory.schemas import InventoryCharge
 from inventory.services import InventoryService
+
+from datetime import datetime, timedelta, timezone
 
 
 class CaseService:
@@ -50,11 +53,70 @@ class CaseService:
             self.db.rollback()
             raise
 
+    def get_case(self, regularity):
+        try:
+            free_case_cooldown = (
+                self.db.query(FreeCaseCooldown)
+                .filter(FreeCaseCooldown.user_id == self.user.id)
+                .first()
+            )
+
+            if not free_case_cooldown:
+                free_case_cooldown = FreeCaseCooldown(user_id=self.user.id)
+                self.db.add(free_case_cooldown)
+            else:
+                now = datetime.now(timezone.utc).replace(tzinfo=None)
+                cooldown_time = timedelta(seconds=regularity)
+                if now - free_case_cooldown.last_claimed_at < cooldown_time:
+                    remaining = cooldown_time - (
+                        now - free_case_cooldown.last_claimed_at
+                    )
+                    raise HTTPException(
+                        status_code=400,
+                        detail={
+                            "message": "Free case cooldown is still active",
+                            "remaining_seconds": int(remaining.total_seconds()),
+                        },
+                    )
+            now = datetime.now(timezone.utc).replace(tzinfo=None)
+            free_case_cooldown.last_claimed_at = now
+            random_case_id = self.get_random_case_entity_id()
+
+            item_to_add = InventoryCharge(
+                entity_id=random_case_id, entity_wear=EntityWear.NONE
+            )
+
+            reward = InventoryService.charge(item_to_add, self.user, self.db)
+
+            self.db.commit()
+
+            return reward
+
+        except Exception:
+            self.db.rollback()
+            raise
+
     def get_random_entity_id(self, case_drops):
         random_drop = random.choices(
             case_drops, weights=[drop.weight for drop in case_drops], k=1
         )[0]
         return random_drop.reward_entity_id
+
+    def get_random_case_entity_id(self):
+        cases = (
+            self.db.query(Entity)
+            .join(Category, Entity.category_id == Category.id)
+            .filter(Category.name.ilike("case"))
+            .all()
+        )
+        if not cases:
+            raise HTTPException(
+                status_code=404,
+                detail="No cases available"
+            )
+
+        random_case = random.choice(cases)
+        return random_case.id
 
     def get_random_wear(self):
         random_wear = random.choice(list(EntityWear)[1:])

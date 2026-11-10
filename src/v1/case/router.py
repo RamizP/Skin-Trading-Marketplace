@@ -45,6 +45,11 @@ def open_case(
 ):
     return case_service.open_case(case_in_inventory_id)
 
+@router.post("/free", response_model=InventoryItem)
+def get_free_case(
+    case_service: CaseService = Depends(get_case_service)
+):
+    return case_service.get_case(15*60)
 
 @router.post("/drops", dependencies=[Depends(is_admin)])
 def add_entity_into_case(case_drop: CaseDropAdd, db: Session = Depends(get_db)):

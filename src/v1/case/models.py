@@ -1,5 +1,5 @@
 from database import Base
-from sqlalchemy import Column, ForeignKey, Integer, UniqueConstraint
+from sqlalchemy import Column, ForeignKey, Integer, UniqueConstraint, DateTime, func
 
 
 class CaseDrop(Base):
@@ -27,3 +27,16 @@ class CaseDrop(Base):
     )
 
     weight = Column(Integer, nullable=False)
+
+class FreeCaseCooldown(Base):
+    __tablename__ = "free_case_cooldown"
+
+    id = Column(Integer, primary_key=True)
+
+    user_id = Column(Integer, ForeignKey("user.id"), nullable=False, unique=True)
+
+    last_claimed_at = Column(
+        DateTime,
+        server_default=func.now(),
+        nullable=False
+    )
