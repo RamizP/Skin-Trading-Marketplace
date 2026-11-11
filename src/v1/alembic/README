@@ -1,1 +1,29 @@
-Generic single-database configuration.
+Database migrations (SQLite)
+===========================
+
+Run these commands from src/v1 with the project's virtual environment active.
+Configure src/.env first. DATABASE_URL overrides the default src/v1/test.db.
+
+Initialize a fresh database or apply pending migrations:
+
+    python -m alembic upgrade head
+    python -m alembic check
+
+After editing the SQLAlchemy models, generate and review a new migration:
+
+    python -m alembic revision --autogenerate -m "describe the schema change"
+    python -m alembic upgrade head
+    python -m alembic check
+
+The initial migration creates schema only; it does not insert catalog data.
+
+Migration history was consolidated on 2026-11-11. The complete initial schema
+retains revision 9b7c4e2a61d0, the former development head. Databases already at
+that revision are left in place by upgrade head. For a database on an earlier
+revision, back it up and upgrade it using the old migration files from Git
+history before using this consolidated history. Do not stamp an older database
+as current without checking and applying the actual schema changes.
+
+Downgrading this initial migration to base removes ALL application tables and
+their data. Use downgrade base only on disposable databases. The automated
+migration test checks upgrade/check/downgrade/re-upgrade on a temporary database.
