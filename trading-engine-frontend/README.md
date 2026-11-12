@@ -20,7 +20,9 @@ npm run dev
 
 Open the Local URL printed by Vite (normally `http://localhost:5173`). Vite forwards `/api` to `http://127.0.0.1:8000`, so a local HTTPS certificate is unnecessary. Database creation and updates are managed by the backend’s Alembic migrations.
 
-The application displays the API’s actual catalog and market. An empty database shows empty states, not invented listings or prices. Administrators can add catalog items; categories must already exist in the API. Existing item image URLs are used, with an SVG fallback when an image is missing or cannot load.
+The backend uses `src/v1/demo.db` by default. On the first startup of an empty database, it adds demo accounts, catalog items, inventories, orders, and case rewards. See the [demo logins](../README.md#try-the-demo) to try it. This data lives in the database and can be traded through the API; restarting does not reset it. Existing databases are left alone. Set `DEMO_DATA=false` in `src/.env` before first startup to keep a new database empty.
+
+Administrators can add catalog items; categories must already exist in the API. Existing item image URLs are used, with an SVG fallback when an image is missing or cannot load.
 
 ## Features
 
@@ -31,7 +33,7 @@ The application displays the API’s actual catalog and market. An empty databas
 - Purchase confirmation, insufficient-balance feedback, and cancellation confirmation.
 - My orders collects the signed-in user’s open buy orders and sell listings through the existing per-entity API endpoints, with at most four entities fetched concurrently.
 - Cancel buy orders from My orders or the Your buy orders section in item details. Both require confirmation and preserve the order in the interface if the API rejects cancellation.
-- Case contents and chances calculated from drop weights; opening consumes a real owned case and reveals the API’s reward.
+- Case contents and chances calculated from drop weights; opening consumes an owned case and reveals the API's reward through a scrolling item reel. The reel slows to the winning item, supports "Reveal now", and reveals immediately with reduced motion enabled.
 - Claim a random free case from the Cases page every 15 minutes using `POST /cases/free`. Successful claims refresh the inventory. The countdown survives reloads in the same tab and resynchronizes with the API's `remaining_seconds` on cooldown rejection; eligibility is always enforced by the server.
 - Explicitly labeled sandbox tools for adding test funds and inventory items. No real payments.
 - Decimal amounts stay as strings when submitted to the API.
@@ -71,7 +73,7 @@ Then run:
 npm run test:e2e
 ```
 
-Playwright starts a separate FastAPI server on port `8765` and Vite on `5174`. The API uses a seeded database in a temporary directory and resets it between tests. It does not use or modify `src/v1/test.db`. Its reset endpoint exists only in `e2e/serve_api.py`, never in the normal app.
+Playwright starts a separate FastAPI server on port `8765` and Vite on `5174`. The API uses a seeded database in a temporary directory and resets it between tests. It does not use or modify the application's database. Its reset endpoint exists only in `e2e/serve_api.py`, never in the normal app.
 
 The tests exercise desktop and mobile layouts, public browsing, registration, login, session restoration, wallet updates, listing/cancellation, buying, case opening, and error recovery. Screenshots and failure traces go to ignored `test-results/`.
 
