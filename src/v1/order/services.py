@@ -2,6 +2,7 @@ from auth.models import User
 from auth.repository import AuthRepository
 from auth.schemas import UserResponse
 from entity.repository import EntityRepository
+from Exceptions import InsufficientBalance
 from fastapi import HTTPException
 from inventory.models import UserInventory
 from inventory.services import InventoryService
@@ -201,7 +202,7 @@ class OrderService:
             raise HTTPException(status_code=404, detail="User not found.")
         total_cost = order_to_buy.price
         if total_cost > buyer_user.balance:
-            raise HTTPException(status_code=400, detail="Not enough balance.")
+            raise InsufficientBalance()
         # Initiate balance transaction
         seller_user.balance += total_cost
         buyer_user.balance -= total_cost

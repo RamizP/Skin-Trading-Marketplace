@@ -128,7 +128,7 @@ def test_matching_orders_trade_automatically(client, db_session, market, first_s
 
 
 @pytest.mark.parametrize("first_side", ["sell", "buy"])
-def test_failed_automatic_match_preserves_existing_order(
+def test_unfunded_automatic_match_leaves_a_sell_listing(
     client, db_session, market, first_side
 ):
     market.buyer.balance = Decimal("5.00")
@@ -147,19 +147,25 @@ def test_failed_automatic_match_preserves_existing_order(
 
     response = client.post("/orders", json=payload, headers=headers)
 
-    assert response.status_code == 400, response.text
-    assert response.json()["detail"] == "Not enough balance."
+    if first_side == "sell":
+        assert response.status_code == 400, response.text
+        assert response.json()["detail"] == "Not enough balance."
+        listing_id = first_order_id
+    else:
+        assert response.status_code == 200, response.text
+        listing_id = response.json()["id"]
+        assert db_session.get(Order, first_order_id) is None
     db_session.refresh(market.seller)
     db_session.refresh(market.buyer)
     db_session.refresh(market.item)
     assert market.seller.balance == Decimal("0.00")
     assert market.buyer.balance == Decimal("5.00")
     assert market.item.user_id == market.seller.id
-    assert market.item.in_sale is (first_side == "sell")
+    assert market.item.in_sale is True
     orders = db_session.query(Order).all()
     assert len(orders) == 1
-    assert orders[0].id == first_order_id
-    assert orders[0].side.value == first_side
+    assert orders[0].id == listing_id
+    assert orders[0].side.value == "sell"
     assert db_session.query(UserInventory).count() == 1
 
 
