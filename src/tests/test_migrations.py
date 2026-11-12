@@ -42,6 +42,7 @@ def test_migrations_initialize_and_recreate_database(tmp_path):
             "order",
             "case_drop",
             "free_case_cooldown",
+            "demo_initialization",
         }
         connection.execute(
             'INSERT INTO "user" (username, password_hashed) VALUES (?, ?)',

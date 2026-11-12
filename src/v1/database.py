@@ -12,7 +12,7 @@ load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 # development database in one predictable location unless DATABASE_URL overrides it.
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    f"sqlite:///{(Path(__file__).resolve().parent / 'test.db').as_posix()}",
+    f"sqlite:///{(Path(__file__).resolve().parent / 'demo.db').as_posix()}",
 )
 
 engine_options = (

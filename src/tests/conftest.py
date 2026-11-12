@@ -51,7 +51,8 @@ def override_database_dependency():
 
 
 @pytest.fixture(autouse=True)
-def clean_test_database(override_database_dependency):
+def clean_test_database(override_database_dependency, monkeypatch):
+    monkeypatch.setenv("DEMO_DATA", "false")
     Base.metadata.drop_all(bind=test_engine)
     Base.metadata.create_all(bind=test_engine)
     yield

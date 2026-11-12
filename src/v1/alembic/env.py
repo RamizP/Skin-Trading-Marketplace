@@ -19,6 +19,7 @@ if config.config_file_name is not None:
 from auth.models import User
 from case.models import CaseDrop
 from database import Base, DATABASE_URL
+from demo import DemoInitialization  # noqa: F401 -- register the startup marker model
 from entity.models import Category, Entity, SubCategory
 from inventory.models import UserInventory
 from order.models import Order

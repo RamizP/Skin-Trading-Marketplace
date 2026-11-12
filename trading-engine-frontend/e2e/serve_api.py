@@ -19,6 +19,7 @@ def main():
         )
         os.environ["SECRET_KEY"] = "browser-test-key-for-disposable-database-only"
         os.environ["TOKEN_LIVE_TIME"] = "60"
+        os.environ["DEMO_DATA"] = "false"
 
         from auth.models import User
         from case.models import CaseDrop

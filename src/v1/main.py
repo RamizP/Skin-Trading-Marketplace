@@ -1,13 +1,32 @@
+import os
+from contextlib import asynccontextmanager
+
 import uvicorn
 from auth.router import router as auth_router
 from case.router import router as case_router
+from database import SessionLocal
+from demo import initialize_demo_data
 from entity.router import router as entity_router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from inventory.router import router as inventory_router
 from order.router import router as order_router
 
-app = FastAPI(title="Trading Engine")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if os.getenv("DEMO_DATA", "true").strip().casefold() not in {
+        "false",
+        "0",
+        "no",
+        "off",
+    }:
+        with SessionLocal() as db:
+            initialize_demo_data(db)
+    yield
+
+
+app = FastAPI(title="Trading Engine", lifespan=lifespan)
 
 origins = [
     "http://localhost:5173",

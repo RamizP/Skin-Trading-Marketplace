@@ -1,0 +1,311 @@
+{
+  "skins": [
+    {
+      "name": "Asiimov",
+      "symbol": "M4A4",
+      "category": "Rifle",
+      "rarity": "legendary",
+      "price": "10.50",
+      "image_name": "StatTrak™ M4A4 | Asiimov (Well-Worn)"
+    },
+    {
+      "name": "Dragon Lore",
+      "symbol": "AWP",
+      "category": "Sniper Rifle",
+      "rarity": "exceedingly_rare",
+      "price": "189.99",
+      "image_name": "AWP | Dragon Lore (Factory New)"
+    },
+    {
+      "name": "Printstream",
+      "symbol": "USP-S",
+      "category": "Pistol",
+      "rarity": "rare",
+      "price": "18.25",
+      "image_name": "USP-S | Printstream (Battle-Scarred)"
+    },
+    {
+      "name": "Chromatic Aberration",
+      "symbol": "AWP-CA",
+      "category": "Sniper Rifle",
+      "rarity": "mythical",
+      "price": "24.50",
+      "image_name": "AWP | Chromatic Aberration (Field-Tested)"
+    },
+    {
+      "name": "Black Lotus",
+      "symbol": "M4A1-S",
+      "category": "Rifle",
+      "rarity": "rare",
+      "price": "8.75",
+      "image_name": "M4A1-S | Black Lotus (Field-Tested)"
+    },
+    {
+      "name": "Code Red",
+      "symbol": "DESERT-EAGLE",
+      "category": "Pistol",
+      "rarity": "legendary",
+      "price": "16.20",
+      "image_name": "Desert Eagle | Code Red (Battle-Scarred)"
+    },
+    {
+      "name": "The Outsiders",
+      "symbol": "AK-OUTSIDERS",
+      "category": "Rifle",
+      "rarity": "legendary",
+      "price": "28.40",
+      "image_name": "AK-47 | The Outsiders (Battle-Scarred)"
+    },
+    {
+      "name": "POP AWP",
+      "symbol": "AWP-POP",
+      "category": "Sniper Rifle",
+      "rarity": "rare",
+      "price": "12.50",
+      "image_name": "AWP | POP AWP (Field-Tested)"
+    },
+    {
+      "name": "Autotronic",
+      "symbol": "DAGGERS-AUTO",
+      "category": "Knife",
+      "rarity": "exceedingly_rare",
+      "price": "145.00",
+      "image_name": "★ Shadow Daggers | Autotronic (Field-Tested)"
+    },
+    {
+      "name": "Redline",
+      "symbol": "AK-REDLINE",
+      "category": "Rifle",
+      "rarity": "rare",
+      "price": "14.75",
+      "image_name": "AK-47 | Redline (Field-Tested)"
+    },
+    {
+      "name": "Vulcan",
+      "symbol": "AK-VULCAN",
+      "category": "Rifle",
+      "rarity": "legendary",
+      "price": "95.00",
+      "image_name": "AK-47 | Vulcan (Field-Tested)"
+    },
+    {
+      "name": "Neon Rider",
+      "symbol": "AK-NEON",
+      "category": "Rifle",
+      "rarity": "legendary",
+      "price": "38.50",
+      "image_name": "AK-47 | Neon Rider (Field-Tested)"
+    },
+    {
+      "name": "The Empress",
+      "symbol": "AK-EMPRESS",
+      "category": "Rifle",
+      "rarity": "legendary",
+      "price": "45.00",
+      "image_name": "AK-47 | The Empress (Field-Tested)"
+    },
+    {
+      "name": "Bloodsport",
+      "symbol": "AK-BLOODSPORT",
+      "category": "Rifle",
+      "rarity": "legendary",
+      "price": "72.50",
+      "image_name": "AK-47 | Bloodsport (Field-Tested)"
+    },
+    {
+      "name": "Desolate Space",
+      "symbol": "M4-DESOLATE",
+      "category": "Rifle",
+      "rarity": "mythical",
+      "price": "13.25",
+      "image_name": "M4A4 | Desolate Space (Field-Tested)"
+    },
+    {
+      "name": "Neo-Noir",
+      "symbol": "M4-NEONOIR",
+      "category": "Rifle",
+      "rarity": "legendary",
+      "price": "22.00",
+      "image_name": "M4A4 | Neo-Noir (Field-Tested)"
+    },
+    {
+      "name": "Hyper Beast",
+      "symbol": "M4-HYPER",
+      "category": "Rifle",
+      "rarity": "legendary",
+      "price": "26.50",
+      "image_name": "M4A1-S | Hyper Beast (Field-Tested)"
+    },
+    {
+      "name": "Player Two",
+      "symbol": "M4-PLAYER",
+      "category": "Rifle",
+      "rarity": "legendary",
+      "price": "32.75",
+      "image_name": "M4A1-S | Player Two (Field-Tested)"
+    },
+    {
+      "name": "Chantico's Fire",
+      "symbol": "M4-CHANTICO",
+      "category": "Rifle",
+      "rarity": "legendary",
+      "price": "29.50",
+      "image_name": "M4A1-S | Chantico's Fire (Field-Tested)"
+    },
+    {
+      "name": "Wildfire",
+      "symbol": "AWP-WILDFIRE",
+      "category": "Sniper Rifle",
+      "rarity": "legendary",
+      "price": "48.00",
+      "image_name": "AWP | Wildfire (Field-Tested)"
+    },
+    {
+      "name": "Fever Dream",
+      "symbol": "AWP-FEVER",
+      "category": "Sniper Rifle",
+      "rarity": "rare",
+      "price": "9.25",
+      "image_name": "AWP | Fever Dream (Field-Tested)"
+    },
+    {
+      "name": "Water Elemental",
+      "symbol": "GLOCK-WATER",
+      "category": "Pistol",
+      "rarity": "rare",
+      "price": "7.50",
+      "image_name": "Glock-18 | Water Elemental (Field-Tested)"
+    },
+    {
+      "name": "Fade",
+      "symbol": "GLOCK-FADE",
+      "category": "Pistol",
+      "rarity": "exceedingly_rare",
+      "price": "125.00",
+      "image_name": "Glock-18 | Fade (Factory New)"
+    },
+    {
+      "name": "Mecha Industries",
+      "symbol": "DEAGLE-MECHA",
+      "category": "Pistol",
+      "rarity": "rare",
+      "price": "6.75",
+      "image_name": "Desert Eagle | Mecha Industries (Field-Tested)"
+    },
+    {
+      "name": "Bullet Queen",
+      "symbol": "GLOCK-QUEEN",
+      "category": "Pistol",
+      "rarity": "mythical",
+      "price": "15.25",
+      "image_name": "Glock-18 | Bullet Queen (Field-Tested)"
+    },
+    {
+      "name": "Fuel Injector",
+      "symbol": "TEC9-FUEL",
+      "category": "Pistol",
+      "rarity": "uncommon",
+      "price": "4.25",
+      "image_name": "Tec-9 | Fuel Injector (Field-Tested)"
+    },
+    {
+      "name": "Disco Tech",
+      "symbol": "MAC10-DISCO",
+      "category": "SMG",
+      "rarity": "rare",
+      "price": "5.50",
+      "image_name": "MAC-10 | Disco Tech (Field-Tested)"
+    },
+    {
+      "name": "Cirrus",
+      "symbol": "MP7-CIRRUS",
+      "category": "SMG",
+      "rarity": "common",
+      "price": "2.25",
+      "image_name": "MP7 | Cirrus (Field-Tested)"
+    },
+    {
+      "name": "Primal Saber",
+      "symbol": "UMP45-PRIMAL",
+      "category": "SMG",
+      "rarity": "uncommon",
+      "price": "3.50",
+      "image_name": "UMP-45 | Primal Saber (Field-Tested)"
+    },
+    {
+      "name": "Power Loader",
+      "symbol": "NEGEV-POWER",
+      "category": "Machinegun",
+      "rarity": "common",
+      "price": "1.75",
+      "image_name": "Negev | Power Loader (Field-Tested)"
+    }
+  ],
+  "cases": [
+    {
+      "name": "After Hours Case",
+      "symbol": "AFTER-HOURS",
+      "category": "case",
+      "rarity": "uncommon",
+      "price": "5.00",
+      "rewards": { "Printstream": 60, "Black Lotus": 30, "Dragon Lore": 10 }
+    },
+    {
+      "name": "Starter Case",
+      "symbol": "STARTER-CASE",
+      "category": "case",
+      "rarity": "common",
+      "price": "2.50",
+      "rewards": {
+        "Cirrus": 40,
+        "Fuel Injector": 30,
+        "Primal Saber": 20,
+        "Redline": 9,
+        "Neon Rider": 1
+      }
+    },
+    {
+      "name": "Neon Case",
+      "symbol": "NEON-CASE",
+      "category": "case",
+      "rarity": "rare",
+      "price": "7.50",
+      "rewards": {
+        "Disco Tech": 40,
+        "Fever Dream": 30,
+        "Neon Rider": 18,
+        "Player Two": 10,
+        "Fade": 2
+      }
+    },
+    {
+      "name": "Rifle Case",
+      "symbol": "RIFLE-CASE",
+      "category": "case",
+      "rarity": "mythical",
+      "price": "10.00",
+      "rewards": {
+        "Black Lotus": 45,
+        "The Outsiders": 25,
+        "Redline": 15,
+        "Hyper Beast": 10,
+        "The Empress": 4,
+        "Vulcan": 1
+      }
+    },
+    {
+      "name": "Collector Case",
+      "symbol": "COLLECTOR-CASE",
+      "category": "case",
+      "rarity": "legendary",
+      "price": "25.00",
+      "rewards": {
+        "Neo-Noir": 40,
+        "Wildfire": 30,
+        "Bloodsport": 20,
+        "Dragon Lore": 9,
+        "Autotronic": 1
+      }
+    }
+  ]
+}
