@@ -12,6 +12,8 @@ from order.schemas import OrderBuy, OrderCreate, OrderDelete, OrderResponse
 from order.validation import _validate_order_input
 from sqlalchemy import update
 from trading.engine import TradingEngine
+from trading.models import TradeHistory
+from trading.schemas import TradeHistoryAdd
 from uow import SQLiteUnitOfWork, UnitOfWork
 
 
@@ -94,6 +96,17 @@ class OrderService:
             )
             self.db.flush()
 
+            self.fill_history(
+                TradeHistoryAdd(
+                    seller_id=order_to_buy.user_id,
+                    buyer_id=user.id,
+                    entity_id=order_to_buy.entity_id,
+                    entity_wear=item_in_inventory.entity_wear,
+                    item_id=item_in_inventory.id,
+                    price=order_to_buy.price,
+                )
+            )
+
             # Deleting the order from Marketplace, and sellers inventory
             self.order_repository.delete(order_to_buy)
             # self.order_repository.delete(item_in_inventory)
@@ -117,6 +130,12 @@ class OrderService:
             if in_transaction == False:
                 self.uow.rollback()
             raise
+
+    def fill_history(self, trade: TradeHistoryAdd) -> TradeHistory:
+        record = TradeHistory(**trade.model_dump())
+        self.db.add(record)
+        self.db.flush()
+        return record
 
     def order_delete(self, order_delete: OrderDelete, user) -> OrderResponse:
 

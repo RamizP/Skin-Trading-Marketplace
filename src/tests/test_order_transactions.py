@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import pytest
 from inventory.models import EntityWear, UserInventory
 from order.models import Order
+from trading.models import TradeHistory
 
 
 @pytest.fixture
@@ -62,6 +63,7 @@ def test_insufficient_balance_preserves_listing_and_balances(
     assert order.price == Decimal("10.00")
     assert db_session.query(Order).count() == 1
     assert db_session.query(UserInventory).count() == 1
+    assert db_session.query(TradeHistory).count() == 0
 
 
 def test_user_cannot_buy_their_own_listing(client, db_session, market):
@@ -167,6 +169,7 @@ def test_unfunded_automatic_match_leaves_a_sell_listing(
     assert orders[0].id == listing_id
     assert orders[0].side.value == "sell"
     assert db_session.query(UserInventory).count() == 1
+    assert db_session.query(TradeHistory).count() == 0
 
 
 @pytest.mark.parametrize("action", ["create", "buy", "cancel"])

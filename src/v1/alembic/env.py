@@ -23,6 +23,7 @@ from demo import DemoInitialization  # noqa: F401 -- register the startup marker
 from entity.models import Category, Entity, SubCategory
 from inventory.models import UserInventory
 from order.models import Order
+from trading.models import TradeHistory  # noqa: F401 -- register trade history metadata
 
 target_metadata = Base.metadata
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
