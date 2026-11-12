@@ -5,10 +5,12 @@ export default function ItemArt({
   entity,
   caseItem = false,
   className = "",
+  loading = "lazy",
 }: {
   entity?: Entity;
   caseItem?: boolean;
   className?: string;
+  loading?: "eager" | "lazy";
 }) {
   const [failedUrl, setFailedUrl] = useState("");
   const gradient = useId();
@@ -19,7 +21,7 @@ export default function ItemArt({
         className={`item-art ${className}`}
         src={url}
         alt={entity.name}
-        loading="lazy"
+        loading={loading}
         onError={() => setFailedUrl(url)}
       />
     );

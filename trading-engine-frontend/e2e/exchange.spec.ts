@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import type { Page } from "@playwright/test";
+import type { APIRequestContext, Page } from "@playwright/test";
 
 test.beforeEach(async ({ request }) => {
   const reset = await request.post("/api/__test/reset");
@@ -480,4 +480,232 @@ test("buy orders can be cancelled from item details and failed cancellation pres
   await expect(
     page.getByRole("heading", { name: "A clean slate." }),
   ).toBeVisible();
+});
+
+async function prepareCaseOpening(
+  page: Page,
+  request: APIRequestContext,
+  count = 1,
+) {
+  await page.goto("/");
+  await register(page);
+  const token = await page.evaluate(() =>
+    sessionStorage.getItem("exchange.session"),
+  );
+  const headers = { Authentication: token! };
+  const catalog = await (await request.get("/api/entities")).json();
+  const caseEntity = catalog.find(
+    (entity: { name: string }) => entity.name === "After Hours Case",
+  );
+  for (let index = 0; index < count; index++) {
+    const response = await request.post("/api/inventory/me/charge", {
+      headers,
+      data: { entity_id: caseEntity.id, entity_wear: "NONE" },
+    });
+    expect(response.ok()).toBe(true);
+  }
+  await page.reload();
+  await page
+    .getByRole("navigation", { name: "Main navigation" })
+    .getByRole("link", { name: "My inventory" })
+    .click();
+  await page
+    .getByRole("button", { name: "Manage After Hours Case", exact: true })
+    .first()
+    .click();
+  return { headers, caseEntity };
+}
+
+test("case opening reel lands on the API reward and stays centred after resizing", async ({
+  page,
+  request,
+}, info) => {
+  const { headers } = await prepareCaseOpening(page, request);
+  let calls = 0;
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/cases/*/open", async (route) => {
+    calls++;
+    await gate;
+    await route.continue();
+  });
+  const response = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/open") &&
+      response.request().method() === "POST",
+  );
+  await page
+    .getByRole("button", { name: "Open one case", exact: true })
+    .click();
+  await expect(page.locator(".case-opening-preparing")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Close dialog", exact: true }),
+  ).toBeDisabled();
+  await page.keyboard.press("Escape");
+  await expect(
+    page.getByRole("dialog", { name: "Case opening", exact: true }),
+  ).toBeVisible();
+  release();
+  const receipt = await (await response).json();
+  const reel = page.getByRole("region", {
+    name: "Case opening reel",
+    exact: true,
+  });
+  await expect(reel).toHaveAttribute("data-state", "spinning");
+  await expect(page.locator(".reward-reveal")).toHaveCount(0);
+  const track = page.locator(".case-reel-track");
+  const initial = await track.evaluate(
+    (element) => getComputedStyle(element).transform,
+  );
+  await expect
+    .poll(() =>
+      track.evaluate((element) => getComputedStyle(element).transform),
+    )
+    .not.toBe(initial);
+
+  const inventory = await (
+    await request.get("/api/inventory/me", { headers })
+  ).json();
+  expect(inventory).toHaveLength(1);
+  expect(inventory[0].entity_id).toBe(receipt.entity_id);
+  const viewport = page.viewportSize()!;
+  await page.setViewportSize({
+    width: viewport.width - 32,
+    height: viewport.height,
+  });
+  await page.screenshot({ path: info.outputPath("case-opening-roll.png") });
+  await expect(reel).toHaveAttribute("data-state", "revealed");
+  await expect(page.locator(".reward-reveal")).toContainText("Printstream");
+  await expect(page.locator(".reward-reveal")).toContainText(
+    receipt.entity_wear,
+  );
+  const winner = page.locator(".case-reel-card.is-winner");
+  await expect(winner).toHaveAttribute(
+    "data-entity-id",
+    String(receipt.entity_id),
+  );
+  const cardBounds = (await winner.boundingBox())!;
+  const reelBounds = (await page.locator(".case-reel-viewport").boundingBox())!;
+  expect(
+    Math.abs(
+      cardBounds.x + cardBounds.width / 2 - reelBounds.x - reelBounds.width / 2,
+    ),
+  ).toBeLessThan(2);
+  expect(
+    await page
+      .getByRole("dialog")
+      .evaluate((dialog) => dialog.scrollWidth <= dialog.clientWidth),
+  ).toBe(true);
+  await expect(
+    page.getByRole("button", { name: "Done", exact: true }),
+  ).toBeEnabled();
+  expect(calls).toBe(1);
+  await page.screenshot({ path: info.outputPath("case-opening-reward.png") });
+});
+
+test("case opening can be revealed early and repeated without extra API calls", async ({
+  page,
+  request,
+}) => {
+  const { headers, caseEntity } = await prepareCaseOpening(page, request, 2);
+  let calls = 0;
+  await page.route("**/api/cases/*/open", async (route) => {
+    calls++;
+    await route.continue();
+  });
+  for (let opening = 0; opening < 2; opening++) {
+    await page
+      .getByRole("button", { name: "Open one case", exact: true })
+      .click();
+    await expect(page.locator(".case-reel")).toHaveAttribute(
+      "data-state",
+      "spinning",
+    );
+    await expect(page.locator(".reward-reveal")).toHaveCount(0);
+    await page.getByRole("button", { name: "Reveal now", exact: true }).click();
+    await expect(page.locator(".reward-reveal")).toContainText("Printstream");
+    await page
+      .getByRole("button", { name: "Back to case", exact: true })
+      .click();
+  }
+  expect(calls).toBe(2);
+  await expect(
+    page.getByRole("button", {
+      name: "No available case in inventory",
+      exact: true,
+    }),
+  ).toBeDisabled();
+  const items = await (
+    await request.get("/api/inventory/me", { headers })
+  ).json();
+  expect(items).toHaveLength(2);
+  expect(
+    items.every(
+      (item: { entity_id: number }) => item.entity_id !== caseEntity.id,
+    ),
+  ).toBe(true);
+});
+
+test("case opening respects reduced motion without replaying the request", async ({
+  page,
+  request,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await prepareCaseOpening(page, request);
+  let calls = 0;
+  await page.route("**/api/cases/*/open", async (route) => {
+    calls++;
+    await route.continue();
+  });
+  await page
+    .getByRole("button", { name: "Open one case", exact: true })
+    .click();
+  await expect(page.locator(".case-reel")).toHaveAttribute(
+    "data-state",
+    "revealed",
+  );
+  await expect(page.locator(".reward-reveal")).toContainText("Printstream");
+  await expect(
+    page.getByRole("button", { name: "Reveal now", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Done", exact: true }),
+  ).toBeEnabled();
+  expect(calls).toBe(1);
+});
+
+test("a rejected case opening shows the error and can be retried", async ({
+  page,
+  request,
+}) => {
+  const { headers, caseEntity } = await prepareCaseOpening(page, request);
+  await page.route("**/api/cases/*/open", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ detail: "Case opening temporarily unavailable" }),
+    }),
+  );
+  await page
+    .getByRole("button", { name: "Open one case", exact: true })
+    .click();
+  await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
+    "Case opening temporarily unavailable",
+  );
+  await expect(page.locator(".case-opening")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Open one case", exact: true }),
+  ).toBeEnabled();
+  const inventory = await (
+    await request.get("/api/inventory/me", { headers })
+  ).json();
+  expect(inventory[0].entity_id).toBe(caseEntity.id);
+  await page.unroute("**/api/cases/*/open");
+  await page
+    .getByRole("button", { name: "Open one case", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Reveal now", exact: true }).click();
+  await expect(page.locator(".reward-reveal")).toContainText("Printstream");
 });

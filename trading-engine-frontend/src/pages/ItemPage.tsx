@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { getCaseDrops, openCase } from "../api/cases";
 import {
@@ -19,6 +19,7 @@ import type {
   User,
 } from "../api/types";
 import { EmptyState, ErrorNotice } from "../components/Feedback";
+import CaseOpening from "../components/CaseOpening";
 import Icon from "../components/Icon";
 import ItemArt from "../components/ItemArt";
 import Modal from "../components/Modal";
@@ -84,8 +85,18 @@ export default function ItemPage({
   const [confirmation, setConfirmation] = useState<Order | null>(null);
   const [cancelId, setCancelId] = useState<number | null>(null);
   const [reward, setReward] = useState<CaseReward | null>(null);
+  const [opening, setOpening] = useState<{
+    inventoryId: number;
+    drops: CaseDrop[];
+    reward: CaseReward | null;
+  } | null>(null);
+  const openingInProgress = useRef(false);
+  const [openedCaseIds, setOpenedCaseIds] = useState<number[]>([]);
   const available = inventory.filter(
-    (item) => item.entity_id === entity.id && !item.in_sale,
+    (item) =>
+      item.entity_id === entity.id &&
+      !item.in_sale &&
+      !openedCaseIds.includes(item.id),
   );
   const chosenItem =
     available.find((item) => item.id === selectedId) || available[0];
@@ -158,14 +169,73 @@ export default function ItemPage({
       onAuth();
       return;
     }
-    if (!chosenItem || pending) return;
+    if (!chosenItem || pending || openingInProgress.current) return;
     const id = chosenItem.id;
-    await perform(
-      "open",
-      async () => {
-        setReward(await openCase(id));
-      },
-      "Case opened. Your reward is now in your inventory.",
+    openingInProgress.current = true;
+    setPending("open");
+    setError("");
+    setNotice("");
+    setReward(null);
+    setOpening({ inventoryId: id, drops: [...drops], reward: null });
+    try {
+      const received = await openCase(id);
+      setOpenedCaseIds((current) => [...current, id]);
+      setOpening((current) =>
+        current ? { ...current, reward: received } : current,
+      );
+    } catch (reason) {
+      setOpening(null);
+      setError(getErrorMessage(reason));
+      setPending("");
+      openingInProgress.current = false;
+    }
+  }
+
+  async function finishOpening(received: CaseReward) {
+    const message = "Case opened. Your reward is now in your inventory.";
+    setReward(received);
+    setNotice(message);
+    query.reload();
+    try {
+      await onChanged(message);
+    } catch (reason) {
+      setError(
+        `Your reward was added, but the inventory could not refresh. ${getErrorMessage(reason)}`,
+      );
+    } finally {
+      setPending("");
+      openingInProgress.current = false;
+    }
+  }
+
+  if (opening) {
+    return (
+      <Modal
+        title="Case opening"
+        onClose={onClose}
+        wide
+        busy={Boolean(pending)}
+      >
+        <CaseOpening
+          key={opening.inventoryId}
+          caseEntity={entity}
+          drops={opening.drops}
+          reward={opening.reward}
+          rewardEntity={
+            opening.reward
+              ? catalog.find((item) => item.id === opening.reward?.entity_id) ||
+                opening.drops.find(
+                  (drop) => drop.entity.id === opening.reward?.entity_id,
+                )?.entity
+              : undefined
+          }
+          busy={Boolean(pending)}
+          error={error}
+          onComplete={finishOpening}
+          onBack={() => setOpening(null)}
+          onDone={onClose}
+        />
+      </Modal>
     );
   }
   return (
