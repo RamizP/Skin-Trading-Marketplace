@@ -1,5 +1,9 @@
 # Trading Marketplace
 
+**[Try the live demo](https://skin-trading-marketplace-production.up.railway.app)**
+
+Sign in with username `guest` and password `GuestDemo123!`, or create your own account.
+
 I got the idea from CS:GO skins and, to some extent, crypto and stock markets. I wanted to build something difficult: a project involving database design, transactions, ACID properties, and concurrency between users. My motivation was to see how far I could go building and architecting the backend myself.
 
 ![Marketplace](docs/images/marketplace.png)
