@@ -8,8 +8,10 @@ from fastapi import HTTPException
 from inventory.models import EntityWear
 from inventory.schemas import InventoryCharge
 from inventory.services import InventoryService
+from uow import SQLiteUnitOfWork
 
 from datetime import datetime, timedelta, timezone
+
 
 
 class CaseService:
@@ -17,9 +19,12 @@ class CaseService:
         self.db = db
         self.user: UserResponse = user
         self.inventory_service: InventoryService = inventory_service
+        self.uow = SQLiteUnitOfWork(db)
 
     def open_case(self, case_in_inventory_id):
         try:
+            self.uow.begin()
+
             inventory_item = self.inventory_service.get_inventory_item_locked(
                 case_in_inventory_id, self.user.id
             )
@@ -45,16 +50,17 @@ class CaseService:
             reward = InventoryService.charge(item_to_add, self.user, self.db)
 
             self.db.delete(inventory_item)
-            self.db.commit()
 
+            self.uow.commit()
             return reward
 
         except Exception:
-            self.db.rollback()
+            self.uow.rollback()
             raise
 
     def get_case(self, regularity):
         try:
+            self.uow.begin()
             free_case_cooldown = (
                 self.db.query(FreeCaseCooldown)
                 .filter(FreeCaseCooldown.user_id == self.user.id)
@@ -88,12 +94,11 @@ class CaseService:
 
             reward = InventoryService.charge(item_to_add, self.user, self.db)
 
-            self.db.commit()
-
+            self.uow.commit()
             return reward
 
         except Exception:
-            self.db.rollback()
+            self.uow.rollback()
             raise
 
     def get_random_entity_id(self, case_drops):
