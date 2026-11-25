@@ -19,3 +19,10 @@ class TradeHistoryResponse(TradeHistoryAdd):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class TradePricePoint(BaseModel):
+    created_at: datetime
+    price: Decimal
+
+    model_config = ConfigDict(from_attributes=True)

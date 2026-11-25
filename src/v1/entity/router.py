@@ -11,12 +11,10 @@ from entity.schemas import (
     SubCategoryResponce,
 )
 from entity.services import EntityService
-from fastapi import (
-    APIRouter,
-    Depends,
-    HTTPException,
-)
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from trading.schemas import TradePricePoint
+from trading.services import TradingService
 
 router = APIRouter(tags=["Entity"])
 
@@ -79,3 +77,8 @@ def get_category(db: Session = Depends(get_db)):
 @router.get("/sub-category", response_model=list[SubCategoryResponce])
 def get_sub_category(db: Session = Depends(get_db)):
     return db.query(SubCategory).all()
+
+
+@router.get("/entities/{entity_id}/price-history", response_model=list[TradePricePoint])
+def get_entity_history(entity_id: int, db: Session = Depends(get_db)):
+    return TradingService().get_entity_history(entity_id, db)
