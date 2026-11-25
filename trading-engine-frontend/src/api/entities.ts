@@ -1,5 +1,5 @@
 import { emptyOn404, request } from "./client";
-import type { Category, Entity, MarketEntity } from "./types";
+import type { Category, Entity, MarketEntity, PriceHistoryPoint } from "./types";
 
 export const getEntities = () =>
   emptyOn404(() => request<MarketEntity[]>("/orders"));
@@ -16,6 +16,8 @@ export async function getAllEntities(): Promise<Entity[]> {
   return entities;
 }
 export const getEntity = (id: number) => request<Entity>(`/entities/${id}`);
+export const getPriceHistory = (id: number) =>
+  request<PriceHistoryPoint[]>(`/entities/${id}/price-history`);
 export const createEntity = (entity: Omit<Entity, "id">) =>
   request<string>("/entities", {
     method: "POST",

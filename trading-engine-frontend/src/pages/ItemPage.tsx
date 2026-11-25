@@ -23,6 +23,7 @@ import CaseOpening from "../components/CaseOpening";
 import Icon from "../components/Icon";
 import ItemArt from "../components/ItemArt";
 import Modal from "../components/Modal";
+import PriceHistoryChart from "../components/PriceHistoryChart";
 import useQuery from "../hooks/useQuery";
 import {
   categoryName,
@@ -498,6 +499,7 @@ export default function ItemPage({
           )}
         </section>
       </div>
+      <PriceHistoryChart key={entity.id} entity={entity} />
       <section className="order-book">
         <div className="section-heading compact">
           <div>

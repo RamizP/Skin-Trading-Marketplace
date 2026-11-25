@@ -19,6 +19,7 @@ export type Entity = {
 };
 export type Category = { id: number; name: string };
 export type MarketEntity = { entity: Entity; lowest_price: Money | null };
+export type PriceHistoryPoint = { created_at: string; price: Money };
 export type InventoryItem = {
   id: number;
   user_id: number;
