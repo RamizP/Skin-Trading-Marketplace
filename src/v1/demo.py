@@ -1,6 +1,7 @@
 """Starter data for trying the marketplace on a fresh installation."""
 
 import json
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 from urllib.parse import quote
@@ -14,6 +15,7 @@ from inventory.models import EntityWear, UserInventory
 from order.models import Order, Side
 from sqlalchemy import Column, DateTime, Integer, func, text
 from sqlalchemy.orm import Session
+from trading.models import TradeHistory
 
 
 class DemoInitialization(Base):
@@ -23,6 +25,24 @@ class DemoInitialization(Base):
     initialized_at = Column(DateTime(), nullable=False, server_default=func.now())
 
 
+DEMO_INITIALIZATION_ID = 1
+DEMO_PRICE_HISTORY_INITIALIZATION_ID = 2
+DEMO_PRICE_MULTIPLIERS = tuple(
+    Decimal(value)
+    for value in (
+        "0.91",
+        "0.98",
+        "1.05",
+        "1.10",
+        "0.90",
+        "0.89",
+        "0.89",
+        "0.895",
+        "0.90",
+    )
+)
+
+
 def initialize_demo_data(db: Session) -> bool:
     """Populate an empty database once, committing all starter data together."""
     try:
@@ -30,7 +50,7 @@ def initialize_demo_data(db: Session) -> bool:
         if db.get_bind().dialect.name == "sqlite":
             db.execute(text("BEGIN IMMEDIATE"))
 
-        if db.get(DemoInitialization, 1):
+        if db.get(DemoInitialization, DEMO_INITIALIZATION_ID):
             db.rollback()
             return False
 
@@ -49,7 +69,68 @@ def initialize_demo_data(db: Session) -> bool:
             return False
 
         _add_demo_data(db)
-        db.add(DemoInitialization(id=1))
+        db.add(DemoInitialization(id=DEMO_INITIALIZATION_ID))
+        db.commit()
+        return True
+    except Exception:
+        db.rollback()
+        raise
+
+
+def initialize_demo_price_history(db: Session) -> bool:
+    """Add sample chart points once, including to an existing demo database."""
+    try:
+        if db.get_bind().dialect.name == "sqlite":
+            db.execute(text("BEGIN IMMEDIATE"))
+
+        if not db.get(DemoInitialization, DEMO_INITIALIZATION_ID):
+            db.rollback()
+            return False
+
+        if db.get(DemoInitialization, DEMO_PRICE_HISTORY_INITIALIZATION_ID):
+            db.rollback()
+            return False
+
+        traders = (
+            db.query(User)
+            .filter(User.username.like("demo_%"))
+            .order_by(User.username)
+            .all()
+        )
+        catalog = json.loads(
+            Path(__file__).with_name("demo_catalog.json").read_text(encoding="utf-8")
+        )
+        entities = {entity.name: entity for entity in db.query(Entity).all()}
+        skins = catalog["skins"]
+        if len(traders) < 2 or any(spec["name"] not in entities for spec in skins):
+            db.rollback()
+            return False
+
+        wears = tuple(wear for wear in EntityWear if wear != EntityWear.NONE)
+        now = datetime.now(UTC).replace(tzinfo=None)
+        history = []
+        for entity_index, spec in enumerate(skins):
+            entity = entities[spec["name"]]
+            base_price = Decimal(spec["price"])
+            for point_index, multiplier in enumerate(DEMO_PRICE_MULTIPLIERS):
+                seller_index = (entity_index + point_index) % len(traders)
+                history.append(
+                    TradeHistory(
+                        seller_id=traders[seller_index].id,
+                        buyer_id=traders[(seller_index + 1) % len(traders)].id,
+                        entity_id=entity.id,
+                        entity_wear=wears[(entity_index + point_index) % len(wears)],
+                        item_id=None,
+                        price=(base_price * multiplier).quantize(Decimal("0.01")),
+                        created_at=now
+                        - timedelta(
+                            days=(len(DEMO_PRICE_MULTIPLIERS) - point_index - 1) * 7
+                        ),
+                    )
+                )
+
+        db.add_all(history)
+        db.add(DemoInitialization(id=DEMO_PRICE_HISTORY_INITIALIZATION_ID))
         db.commit()
         return True
     except Exception:

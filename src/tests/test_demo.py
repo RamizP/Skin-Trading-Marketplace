@@ -6,12 +6,18 @@ import demo
 import pytest
 from auth.models import User, UserRole
 from case.models import CaseDrop
-from demo import DemoInitialization, initialize_demo_data
+from demo import (
+    DEMO_PRICE_HISTORY_INITIALIZATION_ID,
+    DemoInitialization,
+    initialize_demo_data,
+    initialize_demo_price_history,
+)
 from entity.models import Category, Entity
 from fastapi.testclient import TestClient
 from inventory.models import EntityWear, UserInventory
 from order.models import Order, Side
 from sqlalchemy.orm import sessionmaker
+from trading.models import TradeHistory
 
 from src.v1 import main
 
@@ -142,6 +148,62 @@ def test_demo_initialization_preserves_an_existing_database(db_session):
     assert db_session.query(DemoInitialization).count() == 0
 
 
+def test_demo_price_history_seed_is_idempotent_and_preserves_existing_trades(
+    db_session,
+):
+    initialize_demo_data(db_session)
+    guest = db_session.query(User).filter_by(username="guest").one()
+    trader = db_session.query(User).filter_by(username="demo_01").one()
+    entity = db_session.query(Entity).filter_by(name="Dragon Lore").one()
+    asiimov = db_session.query(Entity).filter_by(name="Asiimov").one()
+    existing_trade = TradeHistory(
+        seller_id=guest.id,
+        buyer_id=trader.id,
+        entity_id=entity.id,
+        entity_wear=EntityWear.FIELD_TESTED,
+        price=Decimal("7.77"),
+    )
+    db_session.add(existing_trade)
+    db_session.commit()
+
+    assert initialize_demo_price_history(db_session)
+    assert db_session.query(TradeHistory).count() == 271
+    assert (
+        db_session.query(TradeHistory)
+        .filter(TradeHistory.price == Decimal("7.77"))
+        .count()
+        == 1
+    )
+
+    asiimov_points = (
+        db_session.query(TradeHistory)
+        .filter(TradeHistory.entity_id == asiimov.id)
+        .order_by(TradeHistory.created_at, TradeHistory.id)
+        .all()
+    )
+    assert len(asiimov_points) == 9
+    assert [point.price for point in asiimov_points] == [
+        Decimal("9.56"),
+        Decimal("10.29"),
+        Decimal("11.02"),
+        Decimal("11.55"),
+        Decimal("9.45"),
+        Decimal("9.34"),
+        Decimal("9.34"),
+        Decimal("9.40"),
+        Decimal("9.45"),
+    ]
+    assert (
+        db_session.query(DemoInitialization)
+        .filter_by(id=DEMO_PRICE_HISTORY_INITIALIZATION_ID)
+        .count()
+        == 1
+    )
+
+    assert not initialize_demo_price_history(db_session)
+    assert db_session.query(TradeHistory).count() == 271
+
+
 def test_failed_demo_initialization_rolls_back_and_can_retry(db_session, monkeypatch):
     original = demo._add_demo_data
 
@@ -188,6 +250,10 @@ def test_first_startup_provides_a_working_demo_and_preserves_trades(
         asiimov = next(
             item for item in client.get("/entities").json() if item["name"] == "Asiimov"
         )
+        price_history = client.get(f"/entities/{asiimov['id']}/price-history").json()
+        assert len(price_history) == 9
+        assert all(set(point) == {"created_at", "price"} for point in price_history)
+
         listing = client.get(f"/orders/{asiimov['id']}").json()[0]
         assert (
             client.post(

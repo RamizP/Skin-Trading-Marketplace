@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 from types import SimpleNamespace
 
@@ -70,6 +71,51 @@ def test_direct_purchase_records_history_once(client, db_session, history_market
     )
     assert response.status_code == 404
     assert db_session.query(TradeHistory).count() == 1
+
+
+def test_price_history_returns_only_ordered_price_points(
+    client, db_session, history_market
+):
+    history_rows = [
+        TradeHistory(
+            seller_id=history_market.seller.id,
+            buyer_id=history_market.buyer.id,
+            entity_id=history_market.entity.id,
+            entity_wear=EntityWear.MINIMAL_WEAR,
+            price=price,
+            created_at=created_at,
+        )
+        for price, created_at in [
+            ("100.91", datetime(2025, 1, 3, 12)),
+            ("89.00", datetime(2025, 1, 1, 12)),
+            ("89.00", datetime(2025, 1, 2, 12)),
+        ]
+    ]
+    db_session.add_all(history_rows)
+    db_session.commit()
+
+    response = client.get(f"/entities/{history_market.entity.id}/price-history")
+
+    assert response.status_code == 200, response.text
+    points = response.json()
+    assert [Decimal(point["price"]) for point in points] == [
+        Decimal("89.00"),
+        Decimal("89.00"),
+        Decimal("100.91"),
+    ]
+    assert [point["created_at"] for point in points] == [
+        "2025-01-01T12:00:00",
+        "2025-01-02T12:00:00",
+        "2025-01-03T12:00:00",
+    ]
+    assert all(set(point) == {"created_at", "price"} for point in points)
+
+
+def test_price_history_without_sales_returns_empty_array(client, history_market):
+    response = client.get(f"/entities/{history_market.entity.id}/price-history")
+
+    assert response.status_code == 200
+    assert response.json() == []
 
 
 @pytest.mark.parametrize("first_side", ["buy", "sell"])

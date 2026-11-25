@@ -6,7 +6,7 @@ import uvicorn
 from auth.router import router as auth_router
 from case.router import router as case_router
 from database import SessionLocal
-from demo import initialize_demo_data
+from demo import initialize_demo_data, initialize_demo_price_history
 from entity.router import router as entity_router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,6 +25,7 @@ async def lifespan(app: FastAPI):
     }:
         with SessionLocal() as db:
             initialize_demo_data(db)
+            initialize_demo_price_history(db)
     yield
 
 
