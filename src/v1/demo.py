@@ -1,6 +1,8 @@
 """Starter data for trying the marketplace on a fresh installation."""
 
 import json
+import math
+import random
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -27,7 +29,8 @@ class DemoInitialization(Base):
 
 DEMO_INITIALIZATION_ID = 1
 DEMO_PRICE_HISTORY_INITIALIZATION_ID = 2
-DEMO_PRICE_MULTIPLIERS = tuple(
+DEMO_PRICE_HISTORY_VARIATION_ID = 3
+LEGACY_DEMO_PRICE_MULTIPLIERS = tuple(
     Decimal(value)
     for value in (
         "0.91",
@@ -87,7 +90,7 @@ def initialize_demo_price_history(db: Session) -> bool:
             db.rollback()
             return False
 
-        if db.get(DemoInitialization, DEMO_PRICE_HISTORY_INITIALIZATION_ID):
+        if db.get(DemoInitialization, DEMO_PRICE_HISTORY_VARIATION_ID):
             db.rollback()
             return False
 
@@ -108,34 +111,131 @@ def initialize_demo_price_history(db: Session) -> bool:
 
         wears = tuple(wear for wear in EntityWear if wear != EntityWear.NONE)
         now = datetime.now(UTC).replace(tzinfo=None)
-        history = []
-        for entity_index, spec in enumerate(skins):
-            entity = entities[spec["name"]]
-            base_price = Decimal(spec["price"])
-            for point_index, multiplier in enumerate(DEMO_PRICE_MULTIPLIERS):
+        has_legacy_history = bool(
+            db.get(DemoInitialization, DEMO_PRICE_HISTORY_INITIALIZATION_ID)
+        )
+        if has_legacy_history:
+            _update_legacy_demo_price_history(db, entities, traders, skins, wears, now)
+        else:
+            _insert_demo_price_history(db, entities, traders, skins, wears, now)
+
+        if not has_legacy_history:
+            db.add(DemoInitialization(id=DEMO_PRICE_HISTORY_INITIALIZATION_ID))
+        db.add(DemoInitialization(id=DEMO_PRICE_HISTORY_VARIATION_ID))
+        db.commit()
+        return True
+    except Exception:
+        db.rollback()
+        raise
+
+
+def _demo_price_points(entity_name: str, base_price: Decimal, now: datetime):
+    """Return a repeatable, gently varying price curve and sale dates per skin."""
+    rng = random.Random(f"demo-price-history:{entity_name}")
+    sale_count = rng.randint(6, 14)
+    total_trend = rng.uniform(-0.14, 0.14)
+    starting_level = rng.uniform(0.94, 1.06)
+    cycle_size = rng.uniform(0.012, 0.038)
+    cycle_phase = rng.uniform(0, math.tau)
+    noise = [rng.uniform(-0.009, 0.009) for _ in range(sale_count)]
+    intervals = [rng.randint(4, 10) for _ in range(sale_count - 1)]
+    days_ago = [0] * sale_count
+    for index in range(sale_count - 2, -1, -1):
+        days_ago[index] = days_ago[index + 1] + intervals[index]
+
+    points = []
+    for index in range(sale_count):
+        progress = index / (sale_count - 1)
+        multiplier = (
+            starting_level
+            + total_trend * progress
+            + cycle_size * math.sin(math.tau * progress + cycle_phase)
+            + noise[index]
+        )
+        price = (base_price * Decimal(str(max(multiplier, 0.70)))).quantize(
+            Decimal("0.01")
+        )
+        points.append((price, now - timedelta(days=days_ago[index])))
+    return points
+
+
+def _insert_demo_price_history(db, entities, traders, skins, wears, now):
+    history = []
+    for entity_index, spec in enumerate(skins):
+        entity = entities[spec["name"]]
+        points = _demo_price_points(entity.name, Decimal(spec["price"]), now)
+        for point_index, (price, created_at) in enumerate(points):
+            seller_index = (entity_index + point_index) % len(traders)
+            history.append(
+                TradeHistory(
+                    seller_id=traders[seller_index].id,
+                    buyer_id=traders[(seller_index + 1) % len(traders)].id,
+                    entity_id=entity.id,
+                    entity_wear=wears[(entity_index + point_index) % len(wears)],
+                    item_id=None,
+                    price=price,
+                    created_at=created_at,
+                )
+            )
+    db.add_all(history)
+
+
+def _update_legacy_demo_price_history(db, entities, traders, skins, wears, now):
+    trader_ids = {trader.id for trader in traders}
+    for entity_index, spec in enumerate(skins):
+        entity = entities[spec["name"]]
+        expected_prices = [
+            (Decimal(spec["price"]) * multiplier).quantize(Decimal("0.01"))
+            for multiplier in LEGACY_DEMO_PRICE_MULTIPLIERS
+        ]
+        candidates = (
+            db.query(TradeHistory)
+            .filter(
+                TradeHistory.entity_id == entity.id,
+                TradeHistory.item_id.is_(None),
+                TradeHistory.seller_id.in_(trader_ids),
+                TradeHistory.buyer_id.in_(trader_ids),
+            )
+            .order_by(TradeHistory.created_at, TradeHistory.id)
+            .all()
+        )
+        sample = []
+        for record in candidates:
+            index = len(sample)
+            if index == len(expected_prices):
+                break
+            is_seed_point = (
+                record.price == expected_prices[index]
+                and record.seller_id
+                == traders[(entity_index + index) % len(traders)].id
+                and record.buyer_id
+                == traders[(entity_index + index + 1) % len(traders)].id
+                and record.entity_wear == wears[(entity_index + index) % len(wears)]
+            )
+            if is_seed_point:
+                sample.append(record)
+        if len(sample) == len(expected_prices):
+            points = _demo_price_points(entity.name, Decimal(spec["price"]), now)
+            for record, (price, created_at) in zip(sample, points):
+                record.price = price
+                record.created_at = created_at
+            for record in sample[len(points) :]:
+                db.delete(record)
+            for point_index, (price, created_at) in enumerate(
+                points[len(sample) :], start=len(sample)
+            ):
                 seller_index = (entity_index + point_index) % len(traders)
-                history.append(
+                db.add(
                     TradeHistory(
                         seller_id=traders[seller_index].id,
                         buyer_id=traders[(seller_index + 1) % len(traders)].id,
                         entity_id=entity.id,
                         entity_wear=wears[(entity_index + point_index) % len(wears)],
                         item_id=None,
-                        price=(base_price * multiplier).quantize(Decimal("0.01")),
-                        created_at=now
-                        - timedelta(
-                            days=(len(DEMO_PRICE_MULTIPLIERS) - point_index - 1) * 7
-                        ),
+                        price=price,
+                        created_at=created_at,
                     )
                 )
-
-        db.add_all(history)
-        db.add(DemoInitialization(id=DEMO_PRICE_HISTORY_INITIALIZATION_ID))
-        db.commit()
-        return True
-    except Exception:
-        db.rollback()
-        raise
 
 
 def _add_demo_data(db: Session) -> None:
