@@ -107,8 +107,8 @@ These commands use Windows PowerShell. The development setup is Python 3.13 and 
 ### Setup
 
 ```powershell
-git clone https://github.com/RamizP/FastApi.git
-cd FastApi
+git clone https://github.com/RamizP/Skin-Trading-Marketplace.git
+cd Skin-Trading-Marketplace
 python -m venv venv
 .\venv\Scripts\python.exe -m pip install -r requirements.txt
 npm --prefix trading-engine-frontend ci
